@@ -1,0 +1,512 @@
+/* =========================================
+   ASIGNACIÓN ZOOM
+   ========================================= */
+
+.asignacion-zoom-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.az-panel {
+  padding: 24px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(7, 46, 44, 0.04);
+}
+
+.az-panel-titulo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.az-panel-titulo h3 {
+  margin: 0 0 6px;
+  color: var(--color-verde);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.az-panel-titulo p {
+  margin: 0;
+  color: var(--color-texto-secundario, #66716f);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.az-formulario {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.az-formulario .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.az-formulario label {
+  color: var(--color-texto);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.az-formulario select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: var(--color-blanco);
+  color: var(--color-texto);
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+}
+
+.az-formulario select:focus {
+  border-color: var(--color-dorado);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(204, 180, 99, 0.16);
+}
+
+.az-ayuda {
+  color: var(--color-texto-secundario, #66716f);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.az-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+  padding: 18px;
+  background: #f7f8f6;
+  border: 1px solid #e8ece8;
+  border-radius: 10px;
+}
+
+.az-resumen > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.az-etiqueta {
+  color: #697572;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.az-resumen strong {
+  color: var(--color-verde);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.az-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.az-acciones button {
+  min-height: 40px;
+}
+
+.az-acciones button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.az-mensaje {
+  padding: 13px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.az-mensaje-exito {
+  color: #175c3b;
+  background: #edf8f0;
+  border-color: #cce8d4;
+}
+
+.az-mensaje-advertencia {
+  color: #805b10;
+  background: #fff8e7;
+  border-color: #ead7a4;
+}
+
+.az-btn-quitar {
+  padding: 10px 14px;
+  color: #a33333;
+  background: var(--color-blanco);
+  border: 1px solid #dfbaba;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.az-btn-quitar:hover {
+  background: #fff4f4;
+}
+
+.az-conflictos-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  color: #805b10;
+  background: #fff1cc;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.az-lista-conflictos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.az-conflicto {
+  padding: 16px;
+  border: 1px solid #ead7a4;
+  border-left: 4px solid var(--color-dorado);
+  border-radius: 8px;
+  background: #fffdf7;
+  min-width: 0;
+}
+
+.az-conflicto h4 {
+  margin: 0 0 12px;
+  color: var(--color-verde);
+  font-size: 14px;
+}
+
+.az-conflicto-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+  border-top: 1px solid #f0e8d4;
+}
+
+.az-conflicto-dato span {
+  color: #727a75;
+  font-size: 11px;
+}
+
+.az-conflicto-dato strong {
+  color: #343c38;
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.az-vacio h3 {
+  margin-top: 0;
+  color: var(--color-verde);
+}
+
+.az-vacio p {
+  margin-bottom: 0;
+  color: var(--color-texto-secundario, #66716f);
+  font-size: 13px;
+}
+
+.az-panel-conflictos {
+  border-color: #ead7a4;
+}
+
+@media (max-width: 900px) {
+  .az-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .az-lista-conflictos {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .az-panel {
+    padding: 17px;
+  }
+
+  .az-formulario,
+  .az-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .az-acciones {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .az-acciones button {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   LISTADO AGRUPADO POR DIPLOMADO
+   ========================================= */
+
+.az-listado-programas {
+  display: grid;
+  gap: 22px;
+  margin-top: 8px;
+}
+
+.az-listado-encabezado {
+  margin-bottom: 2px;
+}
+
+.az-listado-encabezado h3 {
+  margin: 0 0 6px;
+  color: var(--color-verde);
+}
+
+.az-listado-encabezado p {
+  margin: 0;
+  color: var(--color-texto);
+  font-size: 0.9rem;
+}
+
+.az-programa-card {
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  background: var(--color-blanco);
+  box-shadow: 0 3px 12px rgb(7 46 44 / 5%);
+}
+
+.az-programa-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 3px solid var(--color-dorado);
+  background: var(--color-verde);
+  color: var(--color-blanco);
+}
+
+.az-programa-icono {
+  display: grid;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 10px;
+  color: var(--color-dorado);
+  font-size: 1.5rem;
+}
+
+.az-programa-titulo {
+  min-width: 0;
+}
+
+.az-programa-titulo h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.az-programa-titulo p {
+  margin: 6px 0 0;
+  color: rgb(255 255 255 / 78%);
+  font-size: 0.85rem;
+}
+
+.az-programa-modulos {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.az-modulo-card {
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: var(--color-blanco);
+}
+
+.az-modulo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #f7f8f6;
+}
+
+.az-modulo-titulo {
+  min-width: 0;
+}
+
+.az-modulo-etiqueta {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-texto);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.az-modulo-titulo h4 {
+  margin: 0;
+  color: var(--color-verde);
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.az-modulo-titulo p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 0;
+  color: var(--color-texto);
+  font-size: 0.84rem;
+}
+
+.az-cuenta-punto {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-dorado);
+}
+
+.az-acciones-tabla {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.az-acciones-tabla button {
+  white-space: nowrap;
+}
+
+.az-sesiones-lista {
+  padding: 0 18px;
+}
+
+.az-sesion-fila {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.az-sesion-fila:last-child {
+  border-bottom: none;
+}
+
+.az-sesion-numero {
+  display: grid;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  background: #f0eee5;
+  color: var(--color-verde);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.az-sesion-info {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+
+.az-sesion-info strong {
+  color: var(--color-texto);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.az-sesion-info span {
+  color: var(--color-texto);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.az-sesion-estado {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #f0eee5;
+  color: var(--color-verde);
+  font-size: 0.75rem;
+}
+
+.az-sin-sesiones {
+  margin: 0;
+  padding: 18px 0;
+  color: var(--color-texto);
+  font-size: 0.875rem;
+}
+
+/* =========================================
+   RESPONSIVE DEL LISTADO
+   ========================================= */
+
+@media (max-width: 700px) {
+  .az-programa-header {
+    padding: 16px;
+  }
+
+  .az-programa-modulos {
+    padding: 10px;
+  }
+
+  .az-modulo-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .az-acciones-tabla {
+    width: 100%;
+  }
+
+  .az-sesiones-lista {
+    padding: 0 14px;
+  }
+
+  .az-sesion-fila {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .az-sesion-estado {
+    margin-left: 47px;
+  }
+}

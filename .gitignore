@@ -1,0 +1,31 @@
+
+@'
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Compilaciones y cachés
+dist/
+**/dist/
+build/
+coverage/
+.vite/
+*.log
+npm-debug.log*
+
+# Archivos del sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archivos locales de Docker y bases de datos
+*.dump
+*.sql.gz
+'@ | Set-Content -Path .gitignore -Encoding utf8
