@@ -13,6 +13,17 @@ const obtenerModulos = async (idCurso) => {
        pm.orden,
        pm.estado,
        pm.id_persona_asesora,
+CASE
+  WHEN p.id_persona IS NOT NULL THEN
+    CONCAT_WS(
+      ' ',
+      NULLIF(TRIM(p.nombre), ''),
+      NULLIF(TRIM(p.apellido_p), ''),
+      NULLIF(TRIM(p.apellido_m), '')
+    )
+  ELSE NULL
+END AS nombre_monitora,
+pm.fecha_inicio::text AS fecha_inicio,
        pm.fecha_inicio::text AS fecha_inicio,
        pm.dias_clase,
        pm.cantidad_sesiones,
@@ -34,6 +45,9 @@ const obtenerModulos = async (idCurso) => {
          '[]'::json
        ) AS sesiones
      FROM public.programa_modulos pm
+LEFT JOIN public.persona p
+  ON p.id_persona = pm.id_persona_asesora
+WHERE pm.id_curso = $1
      WHERE pm.id_curso = $1
      ORDER BY pm.orden ASC, pm.id_modulo ASC`,
     [idCurso]

@@ -121,6 +121,8 @@ function Calendario() {
                   nombreModulo:
                     modulo.nombre || `Módulo ${modulo.orden ?? indiceModulo + 1}`,
                   numeroModulo: modulo.orden ?? indiceModulo + 1,
+                  idMonitora: modulo.id_persona_asesora ?? null,
+nombreMonitora: modulo.nombre_monitora || '',
                   numeroSesion: indiceSesion + 1,
                   zoom:
                     sesion.nombre_cuenta_zoom ||
@@ -645,6 +647,12 @@ function Calendario() {
                     <span>Zoom</span>
                     <b>{sesionSeleccionada.zoom || 'Sin información'}</b>
                   </div>
+                  <div className="calendario-detalle-linea">
+  <span>Monitora</span>
+  <b>
+    {sesionSeleccionada.nombreMonitora || 'Por asignar'}
+  </b>
+</div>
                 </div>
               )}
             </aside>

@@ -1,7 +1,16 @@
+
 const { Pool } = require('pg');
 
+const connectionString = process.env.DATABASE_URL;
+const hostname = connectionString
+  ? new URL(connectionString).hostname
+  : '';
+
+const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString,
+  ssl: isLocal ? false : { rejectUnauthorized: false }
 });
 
 pool.on('connect', () => {
