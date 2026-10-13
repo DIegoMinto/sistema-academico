@@ -648,7 +648,7 @@ nombreMonitora: modulo.nombre_monitora || '',
                     <b>{sesionSeleccionada.zoom || 'Sin información'}</b>
                   </div>
                   <div className="calendario-detalle-linea">
-  <span>Monitora</span>
+  <span>Monitor/a</span>
   <b>
     {sesionSeleccionada.nombreMonitora || 'Por asignar'}
   </b>
