@@ -102,6 +102,7 @@ const obtenerCuentas = async () => {
 // OBTENER UNA CUENTA
 // =========================================================
 
+
 const obtenerCuentaPorId = async (id) => {
   const result = await pool.query(`
     SELECT
@@ -109,13 +110,17 @@ const obtenerCuentaPorId = async (id) => {
       nombre,
       correo,
       password_encriptada,
-      activa
+      activa,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd
     FROM cuentas_zoom
     WHERE id = $1
   `, [id]);
 
   return result.rows[0];
 };
+
 
 
 // =========================================================
@@ -177,9 +182,9 @@ const actualizarCuenta = async (
   nombre,
   correo,
   password,
-  fechaPago,
-  fechaCaducidad,
-  importeUsd
+  fecha_pago,
+  fecha_caducidad,
+  importe_usd
 ) => {
   const parametros = [
     nombre,

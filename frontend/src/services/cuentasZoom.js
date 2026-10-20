@@ -63,13 +63,15 @@ export const crearCuentaZoom = async ({
   return data;
 };
 
-
 export const actualizarCuentaZoom = async (
   id,
   {
     nombre,
     correo,
-    password
+    password,
+    fecha_pago,
+    fecha_caducidad,
+    importe_usd
   }
 ) => {
   const response = await fetch(
@@ -86,7 +88,10 @@ export const actualizarCuentaZoom = async (
       body: JSON.stringify({
         nombre,
         correo,
-        password
+        password,
+        fecha_pago,
+        fecha_caducidad,
+        importe_usd
       })
     }
   );
@@ -102,7 +107,6 @@ export const actualizarCuentaZoom = async (
 
   return data;
 };
-
 
 export const actualizarEstadoZoom = async (
   id,
