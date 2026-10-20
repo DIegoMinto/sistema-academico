@@ -182,9 +182,9 @@ const actualizarCuenta = async (
   nombre,
   correo,
   password,
-  fecha_pago,
-  fecha_caducidad,
-  importe_usd
+  fechaPago,
+  fechaCaducidad,
+  importeUsd
 ) => {
   const parametros = [
     nombre,
