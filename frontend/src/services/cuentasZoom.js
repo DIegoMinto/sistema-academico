@@ -24,7 +24,10 @@ export const obtenerCuentasZoom = async () => {
 export const crearCuentaZoom = async ({
   nombre,
   correo,
-  password
+  password,
+  fecha_pago,
+  fecha_caducidad,
+  importe_usd
 }) => {
   const response = await fetch(
     `${API_URL}/cuentas-zoom`,
@@ -38,10 +41,13 @@ export const crearCuentaZoom = async ({
       credentials: 'include',
 
       body: JSON.stringify({
-        nombre,
-        correo,
-        password
-      })
+  nombre,
+  correo,
+  password,
+  fecha_pago,
+  fecha_caducidad,
+  importe_usd
+})
     }
   );
 

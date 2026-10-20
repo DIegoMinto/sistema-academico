@@ -85,6 +85,9 @@ const obtenerCuentas = async () => {
       nombre,
       correo,
       activa,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd,
       created_at,
       updated_at
     FROM cuentas_zoom
@@ -119,102 +122,134 @@ const obtenerCuentaPorId = async (id) => {
 // CREAR CUENTA
 // =========================================================
 
+
 const crearCuenta = async (
   nombre,
   correo,
-  password
+  password,
+  fechaPago,
+  fechaCaducidad,
+  importeUsd
 ) => {
-  const passwordEncriptada =
-    encriptarPassword(password);
+  const passwordEncriptada = encriptarPassword(password);
 
   const result = await pool.query(`
     INSERT INTO cuentas_zoom (
       nombre,
       correo,
-      password_encriptada
+      password_encriptada,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd
     )
-    VALUES ($1, $2, $3)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING
       id,
       nombre,
       correo,
       activa,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd,
       created_at,
       updated_at
   `, [
     nombre,
     correo,
-    passwordEncriptada
+    passwordEncriptada,
+    fechaPago || null,
+    fechaCaducidad || null,
+    importeUsd === '' || importeUsd == null ? null : importeUsd
   ]);
 
   return result.rows[0];
 };
+
 
 
 // =========================================================
 // ACTUALIZAR CUENTA
 // =========================================================
 
+
 const actualizarCuenta = async (
   id,
   nombre,
   correo,
-  password
+  password,
+  fechaPago,
+  fechaCaducidad,
+  importeUsd
 ) => {
+  const parametros = [
+    nombre,
+    correo,
+    fechaPago || null,
+    fechaCaducidad || null,
+    importeUsd === '' || importeUsd == null ? null : importeUsd
+  ];
+
+  let consulta;
+  let valores;
 
   if (password) {
+    const passwordEncriptada = encriptarPassword(password);
 
-    const passwordEncriptada =
-      encriptarPassword(password);
-
-    const result = await pool.query(`
+    consulta = `
       UPDATE cuentas_zoom
       SET
         nombre = $1,
         correo = $2,
-        password_encriptada = $3,
+        fecha_pago = $3,
+        fecha_caducidad = $4,
+        importe_usd = $5,
+        password_encriptada = $6,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $4
+      WHERE id = $7
       RETURNING
         id,
         nombre,
         correo,
         activa,
+        fecha_pago,
+        fecha_caducidad,
+        importe_usd,
         created_at,
         updated_at
-    `, [
-      nombre,
-      correo,
-      passwordEncriptada,
-      id
-    ]);
+    `;
 
-    return result.rows[0];
+    valores = [...parametros, passwordEncriptada, id];
+  } else {
+    consulta = `
+      UPDATE cuentas_zoom
+      SET
+        nombre = $1,
+        correo = $2,
+        fecha_pago = $3,
+        fecha_caducidad = $4,
+        importe_usd = $5,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $6
+      RETURNING
+        id,
+        nombre,
+        correo,
+        activa,
+        fecha_pago,
+        fecha_caducidad,
+        importe_usd,
+        created_at,
+        updated_at
+    `;
+
+    valores = [...parametros, id];
   }
 
-
-  const result = await pool.query(`
-    UPDATE cuentas_zoom
-    SET
-      nombre = $1,
-      correo = $2,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = $3
-    RETURNING
-      id,
-      nombre,
-      correo,
-      activa,
-      created_at,
-      updated_at
-  `, [
-    nombre,
-    correo,
-    id
-  ]);
+  const result = await pool.query(consulta, valores);
 
   return result.rows[0];
 };
+
 
 
 // =========================================================

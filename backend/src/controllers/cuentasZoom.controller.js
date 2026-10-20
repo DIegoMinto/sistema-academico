@@ -1,8 +1,62 @@
+
 const cuentasZoomService = require('../services/cuentasZoom.service');
+
+// =========================================================
+// VALIDAR DATOS DE LA LICENCIA
+// =========================================================
+
+const validarDatosLicencia = ({
+  fecha_pago,
+  fecha_caducidad,
+  importe_usd
+}) => {
+  const fechaValida = (valor) => {
+    if (valor == null || valor === '') {
+      return true;
+    }
+
+    if (typeof valor !== 'string') {
+      return false;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+      return false;
+    }
+
+    const fecha = new Date(`${valor}T00:00:00Z`);
+
+    return (
+      !Number.isNaN(fecha.getTime()) &&
+      fecha.toISOString().slice(0, 10) === valor
+    );
+  };
+
+  if (
+    !fechaValida(fecha_pago) ||
+    !fechaValida(fecha_caducidad)
+  ) {
+    return 'Las fechas deben ser válidas.';
+  }
+
+  if (
+    importe_usd != null &&
+    importe_usd !== '' &&
+    (
+      !/^\d+(\.\d{1,2})?$/.test(String(importe_usd)) ||
+      !Number.isFinite(Number(importe_usd)) ||
+      Number(importe_usd) < 0 ||
+      Number(importe_usd) > 99999999.99
+    )
+  ) {
+    return 'El importe en dólares debe ser un número no negativo con hasta dos decimales.';
+  }
+
+  return null;
+};
 
 
 // =========================================================
-// OBTENER TODAS
+// OBTENER TODAS LAS CUENTAS
 // =========================================================
 
 const obtenerCuentas = async (req, res) => {
@@ -27,7 +81,7 @@ const obtenerCuentas = async (req, res) => {
 
 
 // =========================================================
-// OBTENER UNA
+// OBTENER UNA CUENTA
 // =========================================================
 
 const obtenerCuenta = async (req, res) => {
@@ -44,7 +98,7 @@ const obtenerCuenta = async (req, res) => {
       });
     }
 
-    // Nunca enviamos la contraseña cifrada
+    // Nunca enviamos la contraseña cifrada al frontend.
     delete cuenta.password_encriptada;
 
     res.json(cuenta);
@@ -64,7 +118,7 @@ const obtenerCuenta = async (req, res) => {
 
 
 // =========================================================
-// CREAR
+// CREAR CUENTA
 // =========================================================
 
 const crearCuenta = async (req, res) => {
@@ -72,9 +126,13 @@ const crearCuenta = async (req, res) => {
     const {
       nombre,
       correo,
-      password
+      password,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd
     } = req.body;
 
+    // Validar campos obligatorios.
     if (!nombre || !correo || !password) {
       return res.status(400).json({
         status: 'error',
@@ -83,11 +141,24 @@ const crearCuenta = async (req, res) => {
       });
     }
 
+    // Validar fechas e importe.
+    const errorLicencia = validarDatosLicencia(req.body);
+
+    if (errorLicencia) {
+      return res.status(400).json({
+        status: 'error',
+        message: errorLicencia
+      });
+    }
+
     const cuenta =
       await cuentasZoomService.crearCuenta(
         nombre,
         correo,
-        password
+        password,
+        fecha_pago,
+        fecha_caducidad,
+        importe_usd
       );
 
     res.status(201).json({
@@ -118,7 +189,7 @@ const crearCuenta = async (req, res) => {
 
 
 // =========================================================
-// ACTUALIZAR
+// ACTUALIZAR CUENTA
 // =========================================================
 
 const actualizarCuenta = async (req, res) => {
@@ -128,14 +199,27 @@ const actualizarCuenta = async (req, res) => {
     const {
       nombre,
       correo,
-      password
+      password,
+      fecha_pago,
+      fecha_caducidad,
+      importe_usd
     } = req.body;
 
+    // Validar campos obligatorios.
     if (!nombre || !correo) {
       return res.status(400).json({
         status: 'error',
-        message:
-          'Nombre y correo son obligatorios'
+        message: 'Nombre y correo son obligatorios'
+      });
+    }
+
+    // Validar fechas e importe.
+    const errorLicencia = validarDatosLicencia(req.body);
+
+    if (errorLicencia) {
+      return res.status(400).json({
+        status: 'error',
+        message: errorLicencia
       });
     }
 
@@ -144,7 +228,10 @@ const actualizarCuenta = async (req, res) => {
         id,
         nombre,
         correo,
-        password
+        password,
+        fecha_pago,
+        fecha_caducidad,
+        importe_usd
       );
 
     if (!cuenta) {
@@ -182,7 +269,7 @@ const actualizarCuenta = async (req, res) => {
 
 
 // =========================================================
-// ACTIVAR / DESACTIVAR
+// ACTIVAR / DESACTIVAR CUENTA
 // =========================================================
 
 const actualizarEstado = async (req, res) => {
@@ -233,7 +320,7 @@ const actualizarEstado = async (req, res) => {
 
 
 // =========================================================
-// ELIMINAR
+// ELIMINAR CUENTA
 // =========================================================
 
 const eliminarCuenta = async (req, res) => {
@@ -268,6 +355,10 @@ const eliminarCuenta = async (req, res) => {
   }
 };
 
+
+// =========================================================
+// EXPORTAR CONTROLADORES
+// =========================================================
 
 module.exports = {
   obtenerCuentas,

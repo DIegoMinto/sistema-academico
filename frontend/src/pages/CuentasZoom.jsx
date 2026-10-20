@@ -28,7 +28,10 @@ function CuentasZoom() {
   const [formulario, setFormulario] = useState({
     nombre: '',
     correo: '',
-    password: ''
+    password: '',
+      fecha_pago: '',
+  fecha_caducidad: '',
+  importe_usd: ''
   });
 
 
@@ -68,7 +71,10 @@ function CuentasZoom() {
     setFormulario({
       nombre: '',
       correo: '',
-      password: ''
+      password: '',
+        fecha_pago: '',
+  fecha_caducidad: '',
+  importe_usd: ''
     });
 
     setEditando(null);
@@ -83,7 +89,10 @@ function CuentasZoom() {
     setFormulario({
       nombre: '',
       correo: '',
-      password: ''
+      password: '',
+        fecha_pago: '',
+  fecha_caducidad: '',
+  importe_usd: ''
     });
 
     setEditando(null);
@@ -97,12 +106,14 @@ function CuentasZoom() {
 
   const abrirEditar = (cuenta) => {
 
-    setFormulario({
-      nombre: cuenta.nombre,
-      correo: cuenta.correo,
-      password: ''
-    });
-
+  setFormulario({
+    nombre: cuenta.nombre,
+    correo: cuenta.correo,
+    password: '',
+    fecha_pago: cuenta.fecha_pago?.slice(0, 10) || '',
+    fecha_caducidad: cuenta.fecha_caducidad?.slice(0, 10) || '',
+    importe_usd: cuenta.importe_usd ?? ''
+  });
     setEditando(cuenta);
 
     setError('');
@@ -406,6 +417,45 @@ function CuentasZoom() {
 
             </div>
 
+            
+<div className="form-field">
+  <label>Fecha de pago</label>
+  <input
+    type="date"
+    value={formulario.fecha_pago}
+    onChange={event =>
+      cambiarFormulario('fecha_pago', event.target.value)
+    }
+  />
+</div>
+
+<div className="form-field">
+  <label>Fecha de caducidad</label>
+  <input
+    type="date"
+    value={formulario.fecha_caducidad}
+    onChange={event =>
+      cambiarFormulario('fecha_caducidad', event.target.value)
+    }
+  />
+</div>
+
+<div className="form-field">
+  <label>Importe pagado (USD)</label>
+  <input
+    type="number"
+    min="0"
+    max="99999999.99"
+    step="0.01"
+    value={formulario.importe_usd}
+    onChange={event =>
+      cambiarFormulario('importe_usd', event.target.value)
+    }
+    placeholder="Ej. 149.99"
+  />
+</div>
+
+
 
             <div className="form-actions">
 
@@ -452,6 +502,9 @@ function CuentasZoom() {
               <th>Estado</th>
 
               <th>Acciones</th>
+              <th>Fecha de pago</th>
+              <th>Caducidad</th>
+              <th>Importe (USD)</th>
 
             </tr>
 
@@ -497,6 +550,14 @@ function CuentasZoom() {
                     <td>
                       {cuenta.correo}
                     </td>
+
+                    <td>{cuenta.fecha_pago || '—'}</td>
+<td>{cuenta.fecha_caducidad || '—'}</td>
+<td>
+  {cuenta.importe_usd != null
+    ? `$${Number(cuenta.importe_usd).toFixed(2)}`
+    : '—'}
+</td>
 
 
                     <td>
