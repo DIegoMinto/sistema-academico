@@ -30,11 +30,12 @@ const obtenerModulos = async (idCurso) => {
          (
            SELECT json_agg(
              json_build_object(
-               'titulo', ps.titulo,
-               'fecha', ps.fecha::text,
-               'hora_inicio', ps.hora_inicio::text,
-               'hora_fin', ps.hora_fin::text
-             )
+              'id_sesion', ps.id_sesion,
+              'titulo', ps.titulo,
+              'fecha', ps.fecha::text,
+              'hora_inicio', ps.hora_inicio::text,
+              'hora_fin', ps.hora_fin::text
+            )
              ORDER BY ps.fecha, ps.hora_inicio
            )
            FROM public.programa_sesiones ps

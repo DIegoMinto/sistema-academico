@@ -6,7 +6,6 @@
   --cal-texto: var(--color-texto, #34413f);
   --cal-borde: var(--color-borde, #e5eae7);
   --cal-fondo: #f7f9f7;
-
   display: grid;
   gap: 22px;
   padding-bottom: 30px;
@@ -28,9 +27,7 @@
   min-height: 175px;
   padding: 30px 34px;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at 90% 15%, rgb(204 180 99 / 17%), transparent 30%),
-    linear-gradient(115deg, #072e2c, #104640);
+  background: radial-gradient(circle at 90% 15%, rgb(204 180 99 / 17%), transparent 30%), linear-gradient(115deg, #072e2c, #104640);
   color: white;
 }
 
@@ -388,7 +385,7 @@
   white-space: nowrap;
   font-size: 0.65rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: grab;
 }
 
 .calendario-evento b {
@@ -640,7 +637,226 @@
   cursor: pointer;
 }
 
+.calendario-mensaje-exito {
+  padding: 12px 16px;
+  border: 1px solid #c8dfd1;
+  border-radius: 10px;
+  background: #eef7f0;
+  color: #245c3e;
+  font-size: 0.82rem;
+}
+
 @keyframes calendario-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.calendario-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px;
+  background: rgba(10, 25, 23, 0.68);
+  backdrop-filter: blur(5px);
+}
+
+.calendario-modal {
+  position: relative;
+  flex: 0 1 480px;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  animation: calendario-modal-entrada 0.2s ease-out;
+}
+
+.calendario-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 22px 18px;
+  border-bottom: 1px solid #e8eeeb;
+}
+
+.calendario-modal-icono {
+  display: grid;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 12px;
+  background: #edf4f1;
+  color: rgb(7, 46, 44);
+  font-size: 25px;
+}
+
+.calendario-modal-titulos {
+  flex: 1;
+}
+
+.calendario-modal-titulos h2 {
+  margin: 0;
+  color: rgb(7, 46, 44);
+  font-size: 19px;
+}
+
+.calendario-modal-titulos p {
+  margin: 5px 0 0;
+  color: #718079;
+  font-size: 13px;
+}
+
+.calendario-modal-cerrar {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: #718079;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.calendario-modal-contenido {
+  padding: 22px;
+}
+
+.calendario-modal-etiqueta {
+  color: #8a7740;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.calendario-modal-contenido h3 {
+  margin: 8px 0;
+  color: rgb(7, 46, 44);
+  font-size: 18px;
+}
+
+.calendario-modal-programa {
+  margin: 0;
+  color: #687770;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.calendario-modal-fechas {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #e6ece8;
+  border-radius: 12px;
+  background: #f5f8f6;
+}
+
+.calendario-modal-fechas > div:not(.calendario-modal-flecha) {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.calendario-modal-fechas span {
+  color: #718079;
+  font-size: 12px;
+}
+
+.calendario-modal-fechas strong {
+  color: rgb(7, 46, 44);
+  font-size: 14px;
+}
+
+.calendario-modal-flecha {
+  color: rgb(204, 180, 99);
+  font-size: 22px;
+}
+
+.calendario-modal-nota {
+  margin: 18px 0 0;
+  color: #687770;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.calendario-modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 22px 22px;
+}
+
+.calendario-modal-acciones button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.calendario-modal-btn-cancelar {
+  border: 1px solid #dce5df;
+  background: white;
+  color: rgb(7, 46, 44);
+}
+
+.calendario-modal-btn-cancelar:hover {
+  background: #f4f7f5;
+}
+
+.calendario-modal-btn-confirmar {
+  border: 1px solid rgb(7, 46, 44);
+  background: rgb(7, 46, 44);
+  color: white;
+}
+
+.calendario-modal-btn-confirmar:hover {
+  background: #0c5a51;
+}
+
+.calendario-modal-acciones button:disabled,
+.calendario-modal-cerrar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.calendario-modal-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: calendario-modal-giro 0.7s linear infinite;
+}
+
+@keyframes calendario-modal-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes calendario-modal-giro {
   to {
     transform: rotate(360deg);
   }
@@ -812,5 +1028,38 @@
 
   .calendario-total-dia {
     grid-column: auto;
+  }
+
+  .calendario-modal-overlay {
+    padding: 12px;
+  }
+
+  .calendario-modal-header,
+  .calendario-modal-contenido {
+    padding: 18px;
+  }
+
+  .calendario-modal-acciones {
+    padding: 14px 18px 18px;
+  }
+
+  .calendario-modal-fechas {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .calendario-modal-fechas strong {
+    font-size: 12px;
+  }
+
+  .calendario-modal-acciones button {
+    padding: 0 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendario-modal,
+  .calendario-modal-spinner {
+    animation: none;
   }
 }

@@ -97,3 +97,18 @@ export async function crearMultiplesModulos(idCurso, modulos) {
 
   return procesarRespuesta(response);
 }
+
+
+export async function reprogramarSesion(idSesion, fecha) {
+  const response = await fetch(
+    `${API_URL}/modulos/sesiones/${idSesion}/fecha`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha })
+    }
+  );
+
+  return procesarRespuesta(response);
+}

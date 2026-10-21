@@ -337,6 +337,121 @@ async function crearMultiplesModulos(idCurso, modulos) {
   }
 }
 
+
+async function reprogramarSesion(idSesion, nuevaFecha) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nuevaFecha || '')) {
+    throw new Error('La nueva fecha no es válida.');
+  }
+
+  const fechaComprobada = new Date(`${nuevaFecha}T00:00:00`);
+
+  if (
+    Number.isNaN(fechaComprobada.getTime()) ||
+    fechaComprobada.toISOString().slice(0, 10) !== nuevaFecha
+  ) {
+    throw new Error('La nueva fecha no es válida.');
+  }
+
+  const client = await mainPool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const resultado = await client.query(`
+      SELECT
+        ps.id_sesion,
+        ps.id_modulo,
+        ps.fecha::text AS fecha,
+        ps.hora_inicio::text AS hora_inicio,
+        ps.hora_fin::text AS hora_fin,
+        ps.estado,
+        pm.id_persona_asesora
+      FROM public.programa_sesiones ps
+      JOIN public.programa_modulos pm
+        ON pm.id_modulo = ps.id_modulo
+      WHERE ps.id_sesion = $1
+      FOR UPDATE OF ps
+    `, [idSesion]);
+
+    if (!resultado.rowCount) {
+      const error = new Error('La sesión no existe.');
+      error.status = 404;
+      throw error;
+    }
+
+    const sesion = resultado.rows[0];
+
+    if (sesion.estado === 'cancelada') {
+      const error = new Error('No se puede reprogramar una sesión cancelada.');
+      error.status = 400;
+      throw error;
+    }
+
+    if (sesion.fecha === nuevaFecha) {
+      await client.query('COMMIT');
+      return { ...sesion, fecha: nuevaFecha };
+    }
+
+    if (sesion.id_persona_asesora != null) {
+      const conflicto = await client.query(`
+        SELECT
+          ps.id_sesion,
+          ps.fecha::text AS fecha,
+          ps.hora_inicio::text AS hora_inicio,
+          ps.hora_fin::text AS hora_fin
+        FROM public.programa_sesiones ps
+        JOIN public.programa_modulos pm
+          ON pm.id_modulo = ps.id_modulo
+        WHERE pm.id_persona_asesora = $1
+          AND ps.id_sesion <> $2
+          AND ps.estado <> 'cancelada'
+          AND ps.fecha = $3
+          AND ps.hora_inicio < $5
+          AND ps.hora_fin > $4
+        LIMIT 1
+      `, [
+        sesion.id_persona_asesora,
+        idSesion,
+        nuevaFecha,
+        sesion.hora_inicio,
+        sesion.hora_fin
+      ]);
+
+      if (conflicto.rowCount) {
+        const error = new Error(
+          'La monitora tiene otra sesión en ese horario.'
+        );
+        error.status = 409;
+        throw error;
+      }
+    }
+
+    const actualizada = await client.query(`
+      UPDATE public.programa_sesiones
+      SET fecha = $1
+      WHERE id_sesion = $2
+      RETURNING
+        id_sesion,
+        id_modulo,
+        fecha::text AS fecha,
+        hora_inicio::text AS hora_inicio,
+        hora_fin::text AS hora_fin,
+        estado
+    `, [nuevaFecha, idSesion]);
+
+    await client.query('COMMIT');
+
+    return actualizada.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
 module.exports = {
-  crearMultiplesModulos
+  crearMultiplesModulos,
+  reprogramarSesion
 };

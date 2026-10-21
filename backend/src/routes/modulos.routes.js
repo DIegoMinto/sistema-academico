@@ -60,4 +60,11 @@ router.post(
   programacionController.crearMultiplesModulos
 );
 
+router.patch(
+  '/sesiones/:idSesion/fecha',
+  requireAuth,
+  programacionController.reprogramarSesion
+);
+
+
 module.exports = router;

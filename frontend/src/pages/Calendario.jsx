@@ -1,8 +1,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { obtenerProgramas } from '../services/programas';
-import { obtenerModulos } from '../services/modulos';
+import {
+  obtenerModulos,
+  reprogramarSesion
+} from '../services/modulos';
 import './Calendario.css';
+import { createPortal } from 'react-dom';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -74,6 +78,10 @@ function Calendario() {
   const [filtroPrograma, setFiltroPrograma] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
   const [sesionSeleccionada, setSesionSeleccionada] = useState(null);
+  const [sesionArrastrada, setSesionArrastrada] = useState(null);
+  const [guardandoSesion, setGuardandoSesion] = useState(false);
+  const [mensajeDrag, setMensajeDrag] = useState('');
+  const [reprogramacionPendiente, setReprogramacionPendiente] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -106,12 +114,15 @@ function Calendario() {
                 if (!fecha) return null;
 
                 return {
-                  id: [
-                    programa.id_curso,
-                    modulo.id_modulo ?? modulo.orden ?? indiceModulo,
-                    sesion.id_sesion ?? sesion.id ?? indiceSesion
-                  ].join('-'),
-                  fecha: claveFecha(fecha),
+  id: [
+    programa.id_curso,
+    modulo.id_modulo ?? modulo.orden ?? indiceModulo,
+    sesion.id_sesion ?? sesion.id ?? indiceSesion
+  ].join('-'),
+
+  idSesion: sesion.id_sesion,
+
+  fecha: claveFecha(fecha),
                   fechaObjeto: fecha,
                   horaInicio: formatearHora(sesion.hora_inicio),
                   horaFin: formatearHora(sesion.hora_fin),
@@ -160,6 +171,102 @@ nombreMonitora: modulo.nombre_monitora || '',
       activo = false;
     };
   }, []);
+
+  
+function iniciarArrastre(event, sesion) {
+  if (!sesion.idSesion) {
+    event.preventDefault();
+    setMensajeDrag(
+      'Esta sesión no tiene un ID válido para reprogramarse.'
+    );
+    return;
+  }
+
+  setSesionArrastrada(sesion);
+  setMensajeDrag('');
+
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData(
+    'text/plain',
+    String(sesion.idSesion)
+  );
+}
+
+function permitirSoltar(event) {
+  event.preventDefault();
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+}
+
+
+function soltarSesion(event, fechaDestino) {
+  event.preventDefault();
+
+  const idArrastrado = event.dataTransfer.getData('text/plain');
+  const sesion = sesionArrastrada;
+
+  if (
+    !sesion ||
+    !sesion.idSesion ||
+    String(sesion.idSesion) !== idArrastrado ||
+    sesion.fecha === fechaDestino ||
+    guardandoSesion
+  ) {
+    setSesionArrastrada(null);
+    return;
+  }
+
+  setReprogramacionPendiente({
+    sesion,
+    fechaAnterior: sesion.fecha,
+    fechaDestino,
+  });
+
+  setSesionArrastrada(null);
+  setMensajeDrag('');
+}
+
+async function confirmarReprogramacion() {
+  if (!reprogramacionPendiente || guardandoSesion) return;
+
+  const { sesion, fechaDestino } = reprogramacionPendiente;
+
+  setGuardandoSesion(true);
+  setMensajeDrag('');
+
+  try {
+    await reprogramarSesion(sesion.idSesion, fechaDestino);
+
+    const fechaObjeto = fechaLocal(fechaDestino);
+
+    setSesiones(actuales =>
+      actuales.map(item =>
+        item.idSesion === sesion.idSesion
+          ? { ...item, fecha: fechaDestino, fechaObjeto }
+          : item
+      )
+    );
+
+    setSesionSeleccionada(actual =>
+      actual?.idSesion === sesion.idSesion
+        ? { ...actual, fecha: fechaDestino, fechaObjeto }
+        : actual
+    );
+
+    setFechaSeleccionada(fechaObjeto);
+    setFechaActual(fechaObjeto);
+    setMensajeDrag('Sesión reprogramada correctamente.');
+    setReprogramacionPendiente(null);
+  } catch (error) {
+    setMensajeDrag(
+      error.message || 'No se pudo reprogramar la sesión.'
+    );
+  } finally {
+    setGuardandoSesion(false);
+  }
+}
 
   const programasDisponibles = useMemo(() => {
     const programas = new Map();
@@ -422,6 +529,19 @@ nombreMonitora: modulo.nombre_monitora || '',
             </div>
           </div>
 
+          {mensajeDrag && (
+            <div
+              className={
+                mensajeDrag.includes('correctamente')
+                  ? 'calendario-mensaje-exito'
+                  : 'calendario-error'
+              }
+              role="status"
+            >
+              {mensajeDrag}
+            </div>
+          )}
+
           <div className="calendario-layout">
             <div className="calendario-principal">
               <div className="calendario-navegacion">
@@ -484,6 +604,8 @@ nombreMonitora: modulo.nombre_monitora || '',
                         vista === 'mes' && !esMesActual ? 'fuera-mes' : ''
                       ].filter(Boolean).join(' ')}
                       onClick={() => setFechaSeleccionada(new Date(dia))}
+                      onDragOver={permitirSoltar}
+                      onDrop={event => soltarSesion(event, clave)}
                     >
                       <span className="calendario-numero-dia">
                         {vista !== 'mes' && (
@@ -499,6 +621,9 @@ nombreMonitora: modulo.nombre_monitora || '',
                           <span
                             key={evento.id}
                             className="calendario-evento"
+                            draggable={!guardandoSesion && Boolean(evento.idSesion)}
+                            onDragStart={event => iniciarArrastre(event, evento)}
+                            onDragEnd={() => setSesionArrastrada(null)}
                             style={{
                               '--evento-color': evento.color
                             }}
@@ -659,6 +784,127 @@ nombreMonitora: modulo.nombre_monitora || '',
           </div>
         </>
       )}
+
+{reprogramacionPendiente && createPortal(
+  <div
+    className="calendario-modal-overlay"
+    onMouseDown={event => {
+      if (
+        event.target === event.currentTarget &&
+        !guardandoSesion
+      ) {
+        setReprogramacionPendiente(null);
+      }
+    }}
+  >
+    <div
+      className="calendario-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal-reprogramacion"
+    >
+      <div className="calendario-modal-header">
+        <div className="calendario-modal-icono">
+          <span>↻</span>
+        </div>
+
+        <div className="calendario-modal-titulos">
+          <h2 id="titulo-modal-reprogramacion">
+            Reprogramar sesión
+          </h2>
+          <p>Confirma el cambio de fecha</p>
+        </div>
+
+        <button
+          type="button"
+          className="calendario-modal-cerrar"
+          aria-label="Cerrar modal"
+          disabled={guardandoSesion}
+          onClick={() => setReprogramacionPendiente(null)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="calendario-modal-contenido">
+        <span className="calendario-modal-etiqueta">
+          SESIÓN
+        </span>
+
+        <h3>{reprogramacionPendiente.sesion.titulo}</h3>
+
+        <p className="calendario-modal-programa">
+          {reprogramacionPendiente.sesion.nombrePrograma}
+        </p>
+
+        <div className="calendario-modal-fechas">
+          <div>
+            <span>Fecha actual</span>
+            <strong>
+              {new Date(
+                `${reprogramacionPendiente.fechaAnterior}T00:00:00`
+              ).toLocaleDateString('es-BO', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </strong>
+          </div>
+
+          <div className="calendario-modal-flecha">→</div>
+
+          <div>
+            <span>Nueva fecha</span>
+            <strong>
+              {new Date(
+                `${reprogramacionPendiente.fechaDestino}T00:00:00`
+              ).toLocaleDateString('es-BO', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </strong>
+          </div>
+        </div>
+
+        <p className="calendario-modal-nota">
+          La hora, la monitora y los demás datos de la sesión
+          se mantendrán sin cambios.
+        </p>
+      </div>
+
+      <div className="calendario-modal-acciones">
+        <button
+          type="button"
+          className="calendario-modal-btn-cancelar"
+          disabled={guardandoSesion}
+          onClick={() => setReprogramacionPendiente(null)}
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          className="calendario-modal-btn-confirmar"
+          disabled={guardandoSesion}
+          onClick={confirmarReprogramacion}
+        >
+          {guardandoSesion ? (
+            <>
+              <span className="calendario-modal-spinner" />
+              Guardando...
+            </>
+          ) : (
+            'Confirmar cambio'
+          )}
+        </button>
+      </div>
+    </div>
+  </div>,
+  document.body
+)}
+
+
     </section>
   );
 }

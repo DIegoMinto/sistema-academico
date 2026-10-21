@@ -51,6 +51,51 @@ const crearMultiplesModulos = async (req, res) => {
   }
 };
 
+
+const reprogramarSesion = async (req, res) => {
+  try {
+    const { idSesion } = req.params;
+    const { fecha } = req.body;
+
+    if (!/^\d+$/.test(idSesion) || BigInt(idSesion) <= 0n) {
+      return res.status(400).json({
+        message: 'El ID de la sesión no es válido.'
+      });
+    }
+
+    if (typeof fecha !== 'string') {
+      return res.status(400).json({
+        message: 'Debes indicar la nueva fecha.'
+      });
+    }
+
+    const sesion = await programacionService.reprogramarSesion(
+      idSesion,
+      fecha
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Sesión reprogramada correctamente.',
+      sesion
+    });
+  } catch (error) {
+    console.error('Error al reprogramar sesión:', error);
+
+    if (error.status) {
+      return res.status(error.status).json({
+        message: error.message
+      });
+    }
+
+    return res.status(500).json({
+      message: 'No se pudo reprogramar la sesión.'
+    });
+  }
+};
+
+
 module.exports = {
-  crearMultiplesModulos
+  crearMultiplesModulos,
+  reprogramarSesion
 };
