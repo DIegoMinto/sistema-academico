@@ -5,7 +5,12 @@ async function procesarRespuesta(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || 'Ocurrió un error');
+    const error = new Error(
+      data.message || 'Ocurrió un error'
+    );
+
+    error.conflictos = data.conflictos || [];
+    throw error;
   }
 
   return data;
@@ -107,6 +112,43 @@ export async function reprogramarSesion(idSesion, fecha) {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fecha })
+    }
+  );
+
+  return procesarRespuesta(response);
+}
+
+
+export async function previsualizarReprogramacionModulo(
+  idModulo,
+  fechaInicio
+) {
+  const response = await fetch(
+    `${API_URL}/modulos/${idModulo}/reprogramacion/preview`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fecha_inicio: fechaInicio
+      })
+    }
+  );
+
+  return procesarRespuesta(response);
+}
+
+
+export async function reprogramarModulo(idModulo, fechaInicio) {
+  const response = await fetch(
+    `${API_URL}/modulos/${idModulo}/reprogramacion`,
+    {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fecha_inicio: fechaInicio
+      })
     }
   );
 

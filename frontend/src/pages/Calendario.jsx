@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { obtenerProgramas } from '../services/programas';
 import {
   obtenerModulos,
-  reprogramarSesion
+  reprogramarSesion,
+  previsualizarReprogramacionModulo,
+  reprogramarModulo
 } from '../services/modulos';
 import './Calendario.css';
 import { createPortal } from 'react-dom';
@@ -82,6 +84,12 @@ function Calendario() {
   const [guardandoSesion, setGuardandoSesion] = useState(false);
   const [mensajeDrag, setMensajeDrag] = useState('');
   const [reprogramacionPendiente, setReprogramacionPendiente] = useState(null);
+  const [modalModulo, setModalModulo] = useState(false);
+  const [fechaInicioNueva, setFechaInicioNueva] = useState('');
+  const [planReprogramacion, setPlanReprogramacion] = useState(null);
+  const [cargandoPreview, setCargandoPreview] = useState(false);
+  const [guardandoModulo, setGuardandoModulo] = useState(false);
+  const [errorReprogramacionModulo, setErrorReprogramacionModulo] = useState('');
 
   useEffect(() => {
     let activo = true;
@@ -120,9 +128,9 @@ function Calendario() {
     sesion.id_sesion ?? sesion.id ?? indiceSesion
   ].join('-'),
 
-  idSesion: sesion.id_sesion,
-
-  fecha: claveFecha(fecha),
+idSesion: sesion.id_sesion,
+idModulo: modulo.id_modulo,
+fecha: claveFecha(fecha),
                   fechaObjeto: fecha,
                   horaInicio: formatearHora(sesion.hora_inicio),
                   horaFin: formatearHora(sesion.hora_fin),
@@ -132,6 +140,9 @@ function Calendario() {
                   nombreModulo:
                     modulo.nombre || `Módulo ${modulo.orden ?? indiceModulo + 1}`,
                   numeroModulo: modulo.orden ?? indiceModulo + 1,
+fechaInicioModulo: modulo.fecha_inicio,
+diasClase: modulo.dias_clase,
+cantidadSesiones: modulo.cantidad_sesiones,
                   idMonitora: modulo.id_persona_asesora ?? null,
 nombreMonitora: modulo.nombre_monitora || '',
                   numeroSesion: indiceSesion + 1,
@@ -265,6 +276,124 @@ async function confirmarReprogramacion() {
     );
   } finally {
     setGuardandoSesion(false);
+  }
+}
+
+function abrirModalReprogramacionModulo() {
+  if (!sesionSeleccionada?.idModulo) {
+    setMensajeDrag('No se pudo identificar el módulo.');
+    return;
+  }
+
+  setFechaInicioNueva(
+    sesionSeleccionada.fechaInicioModulo ||
+    sesionSeleccionada.fecha
+  );
+
+  setPlanReprogramacion(null);
+  setErrorReprogramacionModulo('');
+  setModalModulo(true);
+}
+
+
+async function previsualizarModulo() {
+  if (!sesionSeleccionada?.idModulo || !fechaInicioNueva) {
+    setErrorReprogramacionModulo(
+      'Selecciona una nueva fecha de inicio.'
+    );
+    return;
+  }
+
+  setCargandoPreview(true);
+  setErrorReprogramacionModulo('');
+  setPlanReprogramacion(null);
+
+  try {
+    const respuesta = await previsualizarReprogramacionModulo(
+      sesionSeleccionada.idModulo,
+      fechaInicioNueva
+    );
+
+    setPlanReprogramacion(respuesta.plan);
+  } catch (error) {
+    setErrorReprogramacionModulo(
+      error.message || 'No se pudo calcular la nueva programación.'
+    );
+  } finally {
+    setCargandoPreview(false);
+  }
+}
+
+
+async function confirmarReprogramacionModulo() {
+  if (
+    !sesionSeleccionada?.idModulo ||
+    !planReprogramacion ||
+    planReprogramacion.conflictos?.length > 0 ||
+    guardandoModulo
+  ) {
+    return;
+  }
+
+  setGuardandoModulo(true);
+  setErrorReprogramacionModulo('');
+
+  try {
+    const respuesta = await reprogramarModulo(
+      sesionSeleccionada.idModulo,
+      fechaInicioNueva
+    );
+
+    const fechasActualizadas = new Map(
+      respuesta.sesiones.map(sesion => [
+        String(sesion.id_sesion),
+        sesion.fecha
+      ])
+    );
+
+    const actualizarSesion = sesion => {
+      if (!sesion) return sesion;
+
+      const nuevaFecha = fechasActualizadas.get(
+        String(sesion.idSesion)
+      );
+
+      if (!nuevaFecha) return sesion;
+
+      return {
+        ...sesion,
+        fecha: nuevaFecha,
+        fechaObjeto: fechaLocal(nuevaFecha),
+        fechaInicioModulo: fechaInicioNueva
+      };
+    };
+
+    setSesiones(actuales =>
+      actuales.map(actualizarSesion)
+    );
+
+    setSesionSeleccionada(actual =>
+      actualizarSesion(actual)
+    );
+
+    const nuevaFechaObjeto = fechaLocal(fechaInicioNueva);
+
+    setFechaSeleccionada(nuevaFechaObjeto);
+    setFechaActual(nuevaFechaObjeto);
+
+    setModalModulo(false);
+    setPlanReprogramacion(null);
+
+    setMensajeDrag(
+      'Módulo y todas sus sesiones reprogramados correctamente.'
+    );
+
+  } catch (error) {
+    setErrorReprogramacionModulo(
+      error.message || 'No se pudo reprogramar el módulo.'
+    );
+  } finally {
+    setGuardandoModulo(false);
   }
 }
 
@@ -778,6 +907,17 @@ async function confirmarReprogramacion() {
     {sesionSeleccionada.nombreMonitora || 'Por asignar'}
   </b>
 </div>
+
+{sesionSeleccionada.idModulo && (
+  <button
+    type="button"
+    className="calendario-btn-reprogramar-modulo"
+    onClick={abrirModalReprogramacionModulo}
+  >
+    <span>↻</span>
+    Reprogramar módulo completo
+  </button>
+)}
                 </div>
               )}
             </aside>
@@ -903,10 +1043,209 @@ async function confirmarReprogramacion() {
   </div>,
   document.body
 )}
+{modalModulo && createPortal(
+  <div
+    className="calendario-modal-overlay"
+    onMouseDown={event => {
+      if (
+        event.target === event.currentTarget &&
+        !cargandoPreview &&
+        !guardandoModulo
+      ) {
+        setModalModulo(false);
+      }
+    }}
+  >
+    <div
+      className="calendario-modal calendario-modal-modulo"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal-modulo"
+    >
+      <div className="calendario-modal-header">
+        <div className="calendario-modal-icono">
+          <span>↻</span>
+        </div>
 
+        <div className="calendario-modal-titulos">
+          <h2 id="titulo-modal-modulo">
+            Reprogramar módulo
+          </h2>
+          <p>Se actualizarán todas las fechas de sus sesiones</p>
+        </div>
 
+        <button
+          type="button"
+          className="calendario-modal-cerrar"
+          aria-label="Cerrar modal"
+          disabled={cargandoPreview || guardandoModulo}
+          onClick={() => setModalModulo(false)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="calendario-modal-contenido">
+        <span className="calendario-modal-etiqueta">
+          MÓDULO
+        </span>
+
+        <h3>{sesionSeleccionada.nombreModulo}</h3>
+
+        <p className="calendario-modal-programa">
+          {sesionSeleccionada.nombrePrograma}
+        </p>
+
+        <div className="calendario-modulo-fecha">
+          <label htmlFor="fecha-inicio-modulo">
+            Nueva fecha de inicio
+          </label>
+
+          <input
+            id="fecha-inicio-modulo"
+            type="date"
+            value={fechaInicioNueva}
+            disabled={cargandoPreview || guardandoModulo}
+            onChange={event => {
+              setFechaInicioNueva(event.target.value);
+              setPlanReprogramacion(null);
+              setErrorReprogramacionModulo('');
+            }}
+          />
+
+          <small>
+            La fecha debe coincidir con uno de los días de clase
+            configurados para este módulo.
+          </small>
+        </div>
+
+        {errorReprogramacionModulo && (
+          <div className="calendario-error" role="alert">
+            {errorReprogramacionModulo}
+          </div>
+        )}
+
+        {planReprogramacion && (
+          <div className="calendario-preview-modulo">
+            <div className="calendario-preview-encabezado">
+              <strong>Previsualización de sesiones</strong>
+              <span>
+                {planReprogramacion.sesiones.length} sesiones
+              </span>
+            </div>
+
+            {planReprogramacion.conflictos?.length > 0 && (
+              <div className="calendario-error" role="alert">
+                <strong>
+                  Se encontraron conflictos de horario.
+                </strong>
+
+                {planReprogramacion.conflictos.map((conflicto, indice) => (
+                  <p key={`${conflicto.fecha}-${indice}`}>
+                    {conflicto.sesion}: {conflicto.fecha},
+                    {' '}{conflicto.hora_inicio}–{conflicto.hora_fin}.
+                    {' '}Cruza con {conflicto.sesion_conflicto}
+                    {' '}del módulo {conflicto.modulo_conflicto}.
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <div className="calendario-preview-tabla">
+              <div className="calendario-preview-fila encabezado">
+                <span>Sesión</span>
+                <span>Fecha anterior</span>
+                <span>Nueva fecha</span>
+              </div>
+
+              {planReprogramacion.sesiones.map(sesion => (
+                <div
+                  className="calendario-preview-fila"
+                  key={sesion.id_sesion}
+                >
+                  <span>{sesion.titulo}</span>
+                  <span>
+                    {formatearFecha(
+                      fechaLocal(sesion.fecha_anterior),
+                      {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }
+                    )}
+                  </span>
+                  <strong>
+                    {formatearFecha(
+                      fechaLocal(sesion.fecha_nueva),
+                      {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }
+                    )}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="calendario-modal-nota">
+          Se conservarán los horarios, títulos, estados, IDs,
+          asignación de monitora y demás datos de las sesiones.
+          Únicamente cambiarán las fechas.
+        </p>
+      </div>
+
+      <div className="calendario-modal-acciones">
+        <button
+          type="button"
+          className="calendario-modal-btn-cancelar"
+          disabled={cargandoPreview || guardandoModulo}
+          onClick={() => setModalModulo(false)}
+        >
+          Cancelar
+        </button>
+
+        {!planReprogramacion ? (
+          <button
+            type="button"
+            className="calendario-modal-btn-confirmar"
+            disabled={
+              cargandoPreview ||
+              guardandoModulo ||
+              !fechaInicioNueva
+            }
+            onClick={previsualizarModulo}
+          >
+            {cargandoPreview
+              ? 'Calculando...'
+              : 'Previsualizar fechas'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="calendario-modal-btn-confirmar"
+            disabled={
+              guardandoModulo ||
+              planReprogramacion.conflictos?.length > 0
+            }
+            onClick={confirmarReprogramacionModulo}
+          >
+            {guardandoModulo
+              ? 'Guardando...'
+              : 'Confirmar reprogramación'}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>,
+  document.body
+)}
     </section>
+    
   );
+  
 }
 
 export default Calendario;

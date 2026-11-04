@@ -66,5 +66,16 @@ router.patch(
   programacionController.reprogramarSesion
 );
 
+router.post(
+  '/:idModulo/reprogramacion/preview',
+  requireAuth,
+  programacionController.previsualizarReprogramacionModulo
+);
+
+router.put(
+  '/:idModulo/reprogramacion',
+  requireAuth,
+  programacionController.reprogramarModulo
+);
 
 module.exports = router;

@@ -95,7 +95,95 @@ const reprogramarSesion = async (req, res) => {
 };
 
 
+// Validar el identificador del módulo
+const validarIdModulo = (idModulo) => {
+  return /^\d+$/.test(idModulo || '') && BigInt(idModulo) > 0n;
+};
+
+
+// Previsualizar la reprogramación completa
+const previsualizarReprogramacionModulo = async (req, res) => {
+  try {
+    const { idModulo } = req.params;
+    const { fecha_inicio } = req.body;
+
+    if (!validarIdModulo(idModulo)) {
+      return res.status(400).json({
+        message: 'El ID del módulo no es válido.'
+      });
+    }
+
+    if (typeof fecha_inicio !== 'string') {
+      return res.status(400).json({
+        message: 'Debes indicar la nueva fecha de inicio.'
+      });
+    }
+
+    const plan = await programacionService.previsualizarReprogramacionModulo(
+      idModulo,
+      fecha_inicio
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Previsualización generada correctamente.',
+      plan
+    });
+
+  } catch (error) {
+    console.error('Error al previsualizar reprogramación:', error);
+
+    return res.status(error.status || 500).json({
+      message: error.message || 'No se pudo generar la previsualización.',
+      conflictos: error.conflictos || []
+    });
+  }
+};
+
+
+// Confirmar la reprogramación completa
+const reprogramarModulo = async (req, res) => {
+  try {
+    const { idModulo } = req.params;
+    const { fecha_inicio } = req.body;
+
+    if (!validarIdModulo(idModulo)) {
+      return res.status(400).json({
+        message: 'El ID del módulo no es válido.'
+      });
+    }
+
+    if (typeof fecha_inicio !== 'string') {
+      return res.status(400).json({
+        message: 'Debes indicar la nueva fecha de inicio.'
+      });
+    }
+
+    const resultado = await programacionService.reprogramarModulo(
+      idModulo,
+      fecha_inicio
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Módulo y todas sus sesiones reprogramados correctamente.',
+      ...resultado
+    });
+
+  } catch (error) {
+    console.error('Error al reprogramar módulo:', error);
+
+    return res.status(error.status || 500).json({
+      message: error.message || 'No se pudo reprogramar el módulo.',
+      conflictos: error.conflictos || []
+    });
+  }
+};
+
+
 module.exports = {
   crearMultiplesModulos,
-  reprogramarSesion
+  reprogramarSesion,
+  previsualizarReprogramacionModulo,
+  reprogramarModulo
 };

@@ -450,8 +450,283 @@ async function reprogramarSesion(idSesion, nuevaFecha) {
   }
 }
 
+// Validar una fecha en formato YYYY-MM-DD
+function validarFechaReprogramacion(fecha) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha || '')) {
+    const error = new Error('La nueva fecha no es válida.');
+    error.status = 400;
+    throw error;
+  }
+
+  const fechaUTC = new Date(`${fecha}T00:00:00.000Z`);
+
+  if (
+    Number.isNaN(fechaUTC.getTime()) ||
+    fechaUTC.toISOString().slice(0, 10) !== fecha
+  ) {
+    const error = new Error('La nueva fecha no es válida.');
+    error.status = 400;
+    throw error;
+  }
+
+  return fechaUTC;
+}
+
+
+// Generar todas las fechas respetando los días configurados
+function generarFechasReprogramacion(fechaInicio, diasClase, cantidad) {
+  const fecha = validarFechaReprogramacion(fechaInicio);
+
+  if (!Array.isArray(diasClase) || diasClase.length === 0) {
+    const error = new Error(
+      'Este módulo no tiene días de clase configurados.'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const dias = [...new Set(diasClase.map(Number))];
+
+  if (dias.some(dia => !Number.isInteger(dia) || dia < 0 || dia > 6)) {
+    const error = new Error('La configuración de días de clase no es válida.');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!dias.includes(fecha.getUTCDay())) {
+    const error = new Error(
+      'La fecha de inicio debe coincidir con uno de los días de clase configurados.'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const fechas = [];
+  const actual = new Date(fecha);
+
+  while (fechas.length < cantidad) {
+    if (dias.includes(actual.getUTCDay())) {
+      fechas.push(actual.toISOString().slice(0, 10));
+    }
+
+    actual.setUTCDate(actual.getUTCDate() + 1);
+  }
+
+  return fechas;
+}
+
+
+// Obtener el plan de reprogramación y revisar conflictos
+async function construirPlanReprogramacion(
+  db,
+  idModulo,
+  nuevaFecha,
+  bloquear = false
+) {
+  validarFechaReprogramacion(nuevaFecha);
+
+  const bloqueoModulo = bloquear ? 'FOR UPDATE' : '';
+
+  const resultadoModulo = await db.query(`
+    SELECT
+      id_modulo,
+      id_curso,
+      nombre,
+      fecha_inicio::text AS fecha_inicio,
+      dias_clase,
+      cantidad_sesiones,
+      id_persona_asesora
+    FROM public.programa_modulos
+    WHERE id_modulo = $1
+    ${bloqueoModulo}
+  `, [idModulo]);
+
+  if (!resultadoModulo.rowCount) {
+    const error = new Error('El módulo no existe.');
+    error.status = 404;
+    throw error;
+  }
+
+  const modulo = resultadoModulo.rows[0];
+
+  const bloqueoSesiones = bloquear ? 'FOR UPDATE' : '';
+
+  const resultadoSesiones = await db.query(`
+    SELECT
+      id_sesion,
+      id_modulo,
+      titulo,
+      fecha::text AS fecha,
+      hora_inicio::text AS hora_inicio,
+      hora_fin::text AS hora_fin,
+      estado
+    FROM public.programa_sesiones
+    WHERE id_modulo = $1
+    ORDER BY fecha ASC, hora_inicio ASC, id_sesion ASC
+    ${bloqueoSesiones}
+  `, [idModulo]);
+
+  const sesiones = resultadoSesiones.rows;
+
+  if (sesiones.length === 0) {
+    const error = new Error('Este módulo no tiene sesiones registradas.');
+    error.status = 400;
+    throw error;
+  }
+
+  const fechasNuevas = generarFechasReprogramacion(
+    nuevaFecha,
+    modulo.dias_clase,
+    sesiones.length
+  );
+
+  const sesionesPlanificadas = sesiones.map((sesion, indice) => ({
+    id_sesion: sesion.id_sesion,
+    titulo: sesion.titulo,
+    fecha_anterior: sesion.fecha,
+    fecha_nueva: fechasNuevas[indice],
+    hora_inicio: sesion.hora_inicio,
+    hora_fin: sesion.hora_fin,
+    estado: sesion.estado
+  }));
+
+  const conflictos = [];
+
+  if (modulo.id_persona_asesora != null) {
+    for (const sesion of sesionesPlanificadas) {
+  if (sesion.estado === 'cancelada') continue;
+
+  const resultadoConflicto = await db.query(`
+        SELECT
+          ps.id_sesion,
+          ps.titulo,
+          ps.fecha::text AS fecha,
+          ps.hora_inicio::text AS hora_inicio,
+          ps.hora_fin::text AS hora_fin,
+          pm.nombre AS nombre_modulo
+        FROM public.programa_sesiones ps
+        INNER JOIN public.programa_modulos pm
+          ON pm.id_modulo = ps.id_modulo
+        WHERE pm.id_persona_asesora = $1
+          AND ps.id_modulo <> $2
+          AND ps.estado <> 'cancelada'
+          AND ps.fecha = $3::date
+          AND ps.hora_inicio < $4::time
+          AND ps.hora_fin > $5::time
+        ORDER BY ps.hora_inicio
+      `, [
+        modulo.id_persona_asesora,
+        idModulo,
+        sesion.fecha_nueva,
+        sesion.hora_fin,
+        sesion.hora_inicio
+      ]);
+
+      for (const conflicto of resultadoConflicto.rows) {
+        conflictos.push({
+          sesion: sesion.titulo,
+          fecha: sesion.fecha_nueva,
+          hora_inicio: sesion.hora_inicio,
+          hora_fin: sesion.hora_fin,
+          modulo_conflicto: conflicto.nombre_modulo,
+          sesion_conflicto: conflicto.titulo,
+          hora_inicio_conflicto: conflicto.hora_inicio,
+          hora_fin_conflicto: conflicto.hora_fin
+        });
+      }
+    }
+  }
+
+  return {
+    modulo,
+    fecha_inicio_anterior: modulo.fecha_inicio,
+    fecha_inicio_nueva: nuevaFecha,
+    sesiones: sesionesPlanificadas,
+    conflictos
+  };
+}
+
+
+// Previsualizar la reprogramación sin guardar cambios
+async function previsualizarReprogramacionModulo(idModulo, nuevaFecha) {
+  return construirPlanReprogramacion(
+    mainPool,
+    idModulo,
+    nuevaFecha
+  );
+}
+
+// Reprogramar todas las sesiones del módulo
+async function reprogramarModulo(idModulo, nuevaFecha) {
+  const client = await mainPool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const plan = await construirPlanReprogramacion(
+      client,
+      idModulo,
+      nuevaFecha,
+      true
+    );
+
+    if (plan.conflictos.length > 0) {
+      const error = new Error(
+        'No se puede reprogramar el módulo porque la asesora tiene conflictos de horario.'
+      );
+
+      error.status = 409;
+      error.conflictos = plan.conflictos;
+      throw error;
+    }
+
+    // Actualizar las fechas de todas las sesiones.
+    for (const sesion of plan.sesiones) {
+      await client.query(`
+        UPDATE public.programa_sesiones
+        SET fecha = $1
+        WHERE id_sesion = $2
+          AND id_modulo = $3
+      `, [
+        sesion.fecha_nueva,
+        sesion.id_sesion,
+        idModulo
+      ]);
+    }
+
+    // Actualizar la fecha de inicio del módulo.
+    const resultadoModulo = await client.query(`
+      UPDATE public.programa_modulos
+      SET fecha_inicio = $1
+      WHERE id_modulo = $2
+      RETURNING
+        id_modulo,
+        nombre,
+        fecha_inicio::text AS fecha_inicio
+    `, [nuevaFecha, idModulo]);
+
+    await client.query('COMMIT');
+
+    return {
+      modulo: resultadoModulo.rows[0],
+      sesiones_actualizadas: plan.sesiones.length,
+      sesiones: plan.sesiones.map(sesion => ({
+        ...sesion,
+        fecha: sesion.fecha_nueva
+      }))
+    };
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 module.exports = {
   crearMultiplesModulos,
-  reprogramarSesion
+  reprogramarSesion,
+  previsualizarReprogramacionModulo,
+  reprogramarModulo
 };
