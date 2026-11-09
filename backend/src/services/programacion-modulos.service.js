@@ -724,9 +724,138 @@ async function reprogramarModulo(idModulo, nuevaFecha) {
   }
 }
 
+
+// Cambiar la monitora asignada a un módulo
+async function cambiarMonitoraModulo(idModulo, idPersona) {
+  const client = await mainPool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Bloquear el módulo para evitar cambios simultáneos.
+    const resultadoModulo = await client.query(`
+      SELECT
+        id_modulo,
+        nombre,
+        id_persona_asesora
+      FROM public.programa_modulos
+      WHERE id_modulo = $1
+      FOR UPDATE
+    `, [idModulo]);
+
+    if (!resultadoModulo.rowCount) {
+      const error = new Error('El módulo no existe.');
+      error.status = 404;
+      throw error;
+    }
+
+    const modulo = resultadoModulo.rows[0];
+
+    // Comprobar que la nueva monitora esté habilitada.
+    const habilitada = await dbAcademica.query(`
+      SELECT id_persona
+      FROM public.personal_academico
+      WHERE id_persona = $1
+        AND monitorea = TRUE
+      LIMIT 1
+    `, [idPersona]);
+
+    if (!habilitada.rowCount) {
+      const error = new Error(
+        'La persona seleccionada no está habilitada como monitora.'
+      );
+      error.status = 400;
+      throw error;
+    }
+
+    // Si ya tiene asignada esa monitora, no hace falta modificar nada.
+    if (
+      String(modulo.id_persona_asesora) === String(idPersona)
+    ) {
+      await client.query('COMMIT');
+
+      return {
+        id_modulo: modulo.id_modulo,
+        nombre: modulo.nombre,
+        id_persona_asesora: modulo.id_persona_asesora
+      };
+    }
+
+    // Bloquear las sesiones del módulo.
+    await client.query(`
+      SELECT id_sesion
+      FROM public.programa_sesiones
+      WHERE id_modulo = $1
+      FOR UPDATE
+    `, [idModulo]);
+
+    // Buscar cruces con otros módulos de la nueva monitora.
+    const resultadoConflictos = await client.query(`
+      SELECT
+        propia.id_sesion,
+        propia.titulo AS sesion,
+        propia.fecha::text AS fecha,
+        propia.hora_inicio::text AS hora_inicio,
+        propia.hora_fin::text AS hora_fin,
+        otro.titulo AS sesion_conflicto,
+        otro.fecha::text AS fecha_conflicto,
+        otro.hora_inicio::text AS hora_inicio_conflicto,
+        otro.hora_fin::text AS hora_fin_conflicto,
+        otro_modulo.nombre AS modulo_conflicto
+      FROM public.programa_sesiones propia
+      INNER JOIN public.programa_sesiones otro
+        ON otro.fecha = propia.fecha
+       AND otro.hora_inicio < propia.hora_fin
+       AND otro.hora_fin > propia.hora_inicio
+      INNER JOIN public.programa_modulos otro_modulo
+        ON otro_modulo.id_modulo = otro.id_modulo
+      WHERE propia.id_modulo = $1
+        AND propia.estado <> 'cancelada'
+        AND otro.id_modulo <> $1
+        AND otro.estado <> 'cancelada'
+        AND otro_modulo.id_persona_asesora = $2
+      ORDER BY propia.fecha, propia.hora_inicio
+    `, [idModulo, idPersona]);
+
+    if (resultadoConflictos.rowCount > 0) {
+      const error = new Error(
+        'La monitora seleccionada tiene conflictos de horario con otros módulos.'
+      );
+
+      error.status = 409;
+      error.conflictos = resultadoConflictos.rows;
+
+      throw error;
+    }
+
+    // Actualizar únicamente la monitora del módulo.
+    const actualizado = await client.query(`
+      UPDATE public.programa_modulos
+      SET id_persona_asesora = $1
+      WHERE id_modulo = $2
+      RETURNING
+        id_modulo,
+        nombre,
+        id_persona_asesora
+    `, [idPersona, idModulo]);
+
+    await client.query('COMMIT');
+
+    return actualizado.rows[0];
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
 module.exports = {
   crearMultiplesModulos,
   reprogramarSesion,
   previsualizarReprogramacionModulo,
-  reprogramarModulo
+  reprogramarModulo,
+  cambiarMonitoraModulo
 };

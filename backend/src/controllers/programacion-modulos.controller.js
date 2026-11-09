@@ -181,9 +181,53 @@ const reprogramarModulo = async (req, res) => {
 };
 
 
+// Cambiar monitora de un módulo
+const cambiarMonitoraModulo = async (req, res) => {
+  try {
+    const { idModulo } = req.params;
+    const { id_persona_asesora } = req.body;
+
+    if (!validarIdModulo(idModulo)) {
+      return res.status(400).json({
+        message: 'El ID del módulo no es válido.'
+      });
+    }
+
+    if (
+      id_persona_asesora === undefined ||
+      !/^\d+$/.test(String(id_persona_asesora)) ||
+      BigInt(id_persona_asesora) <= 0n
+    ) {
+      return res.status(400).json({
+        message: 'Debes seleccionar una monitora válida.'
+      });
+    }
+
+    const modulo = await programacionService.cambiarMonitoraModulo(
+      idModulo,
+      String(id_persona_asesora)
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Monitora cambiada correctamente.',
+      modulo
+    });
+
+  } catch (error) {
+    console.error('Error al cambiar monitora del módulo:', error);
+
+    return res.status(error.status || 500).json({
+      message: error.message || 'No se pudo cambiar la monitora.',
+      conflictos: error.conflictos || []
+    });
+  }
+};
+
 module.exports = {
   crearMultiplesModulos,
   reprogramarSesion,
   previsualizarReprogramacionModulo,
-  reprogramarModulo
+  reprogramarModulo,
+  cambiarMonitoraModulo
 };

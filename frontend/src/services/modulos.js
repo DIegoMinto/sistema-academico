@@ -154,3 +154,19 @@ export async function reprogramarModulo(idModulo, fechaInicio) {
 
   return procesarRespuesta(response);
 }
+
+export async function cambiarMonitoraModulo(idModulo, idPersona) {
+  const response = await fetch(
+    `${API_URL}/modulos/${idModulo}/monitora`,
+    {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_persona_asesora: idPersona
+      })
+    }
+  );
+
+  return procesarRespuesta(response);
+}

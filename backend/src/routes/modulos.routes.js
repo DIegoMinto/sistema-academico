@@ -78,4 +78,10 @@ router.put(
   programacionController.reprogramarModulo
 );
 
+router.put(
+  '/:idModulo/monitora',
+  requireAuth,
+  programacionController.cambiarMonitoraModulo
+);
+
 module.exports = router;

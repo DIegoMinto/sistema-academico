@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -7,7 +6,8 @@ import {
   eliminarModulo,
   obtenerMonitoras,
   crearMultiplesModulos,
-  previsualizarAsignacion
+  previsualizarAsignacion,
+  cambiarMonitoraModulo
 } from '../services/modulos';
 import './CursoDetalle.css';
 
@@ -138,6 +138,11 @@ function CursoDetalle() {
 
   const [errorEdicion, setErrorEdicion] = useState('');
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [moduloCambioMonitora, setModuloCambioMonitora] = useState(null);
+  const [nuevaMonitora, setNuevaMonitora] = useState('');
+  const [guardandoMonitora, setGuardandoMonitora] = useState(false);
+  const [errorCambioMonitora, setErrorCambioMonitora] = useState('');
+  const [conflictosMonitora, setConflictosMonitora] = useState([]);
 
   async function cargarModulos() {
     setCargando(true);
@@ -191,6 +196,53 @@ function CursoDetalle() {
     setErrorPlan('');
     setMensajePlan('');
   }
+  function abrirCambioMonitora(modulo) {
+  setModuloCambioMonitora(modulo);
+  setNuevaMonitora(
+    modulo.id_persona_asesora
+      ? String(modulo.id_persona_asesora)
+      : ''
+  );
+  setErrorCambioMonitora('');
+  setConflictosMonitora([]);
+}
+
+function cerrarCambioMonitora() {
+  if (guardandoMonitora) return;
+
+  setModuloCambioMonitora(null);
+  setNuevaMonitora('');
+  setErrorCambioMonitora('');
+  setConflictosMonitora([]);
+}
+
+async function guardarCambioMonitora() {
+  if (!moduloCambioMonitora || !nuevaMonitora) {
+    setErrorCambioMonitora('Selecciona una monitora.');
+    return;
+  }
+
+  setGuardandoMonitora(true);
+  setErrorCambioMonitora('');
+  setConflictosMonitora([]);
+
+  try {
+    await cambiarMonitoraModulo(
+      moduloCambioMonitora.id_modulo,
+      nuevaMonitora
+    );
+
+    await cargarModulos();
+
+    cerrarCambioMonitora();
+
+  } catch (error) {
+    setErrorCambioMonitora(error.message);
+    setConflictosMonitora(error.conflictos || []);
+  } finally {
+    setGuardandoMonitora(false);
+  }
+}
 
   function cambiarDia(dia, marcado) {
     setBorrador(actual => ({
@@ -1366,26 +1418,124 @@ function CursoDetalle() {
                 </span>
 
                 <div className="cd-existing-actions">
-                  <button
-                    className="cd-btn cd-btn-light"
-                    type="button"
-                    onClick={() => prepararEdicion(modulo)}
-                  >
-                    Editar
-                  </button>
+  <button
+    className="cd-btn cd-btn-light"
+    type="button"
+    onClick={() => prepararEdicion(modulo)}
+  >
+    Editar
+  </button>
 
-                  <button
-                    className="cd-btn cd-btn-danger"
-                    type="button"
-                    onClick={() => borrarModulo(modulo)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
+<button
+  className="cd-btn cd-btn-light"
+  type="button"
+  onClick={() => abrirCambioMonitora(modulo)}
+>
+  Cambiar monitor/a
+</button>
+
+  <button
+    className="cd-btn cd-btn-danger"
+    type="button"
+    onClick={() => borrarModulo(modulo)}
+  >
+    Eliminar
+  </button>
+</div>
               </article>
             ))}
           </div>
         )}
+        {moduloCambioMonitora && (
+  <div className="cd-modal-overlay">
+    <div className="cd-modal">
+      <h3>Cambiar monitora</h3>
+
+      <p>
+        Módulo: <strong>{moduloCambioMonitora.nombre}</strong>
+      </p>
+
+      <p>
+        Monitora actual:{' '}
+        <strong>
+          {obtenerNombreAsesora(
+            moduloCambioMonitora.id_persona_asesora
+          )}
+        </strong>
+      </p>
+
+      <label htmlFor="nueva-monitora">
+        Nueva monitora
+      </label>
+
+      <select
+        id="nueva-monitora"
+        value={nuevaMonitora}
+        onChange={e => {
+          setNuevaMonitora(e.target.value);
+          setErrorCambioMonitora('');
+          setConflictosMonitora([]);
+        }}
+        disabled={guardandoMonitora || cargandoMonitoras}
+      >
+        <option value="">Seleccionar monitora</option>
+
+        {monitoras.map(persona => (
+          <option
+            key={persona.id_persona}
+            value={persona.id_persona}
+          >
+            {persona.nombre}
+          </option>
+        ))}
+      </select>
+
+      {errorCambioMonitora && (
+        <div className="cd-alert cd-warning">
+          {errorCambioMonitora}
+
+          {conflictosMonitora.length > 0 && (
+            <ul>
+              {conflictosMonitora.map((conflicto, i) => (
+                <li key={`${conflicto.id_sesion}-${i}`}>
+                  {conflicto.fecha}: {conflicto.hora_inicio}–{conflicto.hora_fin}
+                  {' — '}
+                  {conflicto.modulo_conflicto}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="cd-existing-actions">
+        <button
+          type="button"
+          className="cd-btn cd-btn-light"
+          onClick={cerrarCambioMonitora}
+          disabled={guardandoMonitora}
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          className="cd-btn cd-btn-primary"
+          onClick={guardarCambioMonitora}
+          disabled={
+            guardandoMonitora ||
+            cargandoMonitoras ||
+            !nuevaMonitora
+          }
+        >
+          {guardandoMonitora
+            ? 'Guardando...'
+            : 'Confirmar cambio'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       </section>
     </section>
   );
