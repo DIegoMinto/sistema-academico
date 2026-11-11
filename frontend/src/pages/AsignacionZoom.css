@@ -22,7 +22,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .az-panel-titulo h3 {
@@ -39,7 +39,9 @@
   line-height: 1.6;
 }
 
-/* FORMULARIO */
+/* =========================================
+   FORMULARIO
+   ========================================= */
 
 .az-formulario {
   display: grid;
@@ -85,7 +87,9 @@
   line-height: 1.5;
 }
 
-/* RESUMEN */
+/* =========================================
+   RESUMEN
+   ========================================= */
 
 .az-resumen {
   display: grid;
@@ -120,7 +124,9 @@
   overflow-wrap: anywhere;
 }
 
-/* ACCIONES */
+/* =========================================
+   BOTONES Y ACCIONES
+   ========================================= */
 
 .az-acciones {
   display: flex;
@@ -134,7 +140,8 @@
   min-height: 40px;
 }
 
-.az-acciones button:disabled {
+.az-acciones button:disabled,
+.az-acciones-tabla button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -155,7 +162,9 @@
   background: #fff4f4;
 }
 
-/* MENSAJES */
+/* =========================================
+   MENSAJES
+   ========================================= */
 
 .az-mensaje {
   padding: 13px 16px;
@@ -189,6 +198,164 @@
 }
 
 /* =========================================
+   CONFLICTOS SIMPLIFICADOS
+   ========================================= */
+
+.az-panel-conflictos {
+  border-color: #ead7a4;
+  background: #fffefa;
+}
+
+.az-conflictos-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  color: #805b10;
+  background: #fff1cc;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.az-lista-conflictos {
+  display: grid;
+  gap: 10px;
+}
+
+.az-conflicto {
+  padding: 14px 16px;
+  border: 1px solid #eee4c9;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.az-conflicto-resumen {
+  display: grid;
+  gap: 12px;
+}
+
+.az-conflicto-numero {
+  color: #805b10;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.az-conflicto-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 3px solid var(--color-dorado);
+}
+
+.az-conflicto-fila > span {
+  color: #805b10;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.az-conflicto-fila strong {
+  color: var(--color-verde);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.az-conflicto-fila small {
+  color: #697572;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.az-conflicto-fila-ocupada {
+  border-left-color: #c77a63;
+}
+
+.az-conflicto-fila-ocupada > span {
+  color: #a35b32;
+}
+
+/* =========================================
+   CUENTAS ALTERNATIVAS
+   ========================================= */
+
+.az-panel-alternativas {
+  border-color: #d8e5dc;
+}
+
+.az-lista-alternativas {
+  display: grid;
+  gap: 10px;
+}
+
+.az-alternativa {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-borde);
+  border-radius: 9px;
+}
+
+.az-alternativa-libre {
+  background: #f3faf5;
+  border-color: #cce8d4;
+}
+
+.az-alternativa-ocupada {
+  background: #fff9f5;
+  border-color: #ead7c8;
+}
+
+.az-alternativa-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.az-alternativa-info strong {
+  color: var(--color-verde);
+  font-size: 14px;
+}
+
+.az-alternativa-info > span {
+  color: var(--color-texto);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.az-alternativa-estado {
+  color: #267247 !important;
+  font-weight: 600;
+}
+
+.az-alternativa-ocupada .az-alternativa-estado {
+  color: #a35b32 !important;
+}
+
+.az-no-disponible {
+  flex-shrink: 0;
+  color: #a35b32;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.az-alternativas-cargando,
+.az-alternativas-vacio {
+  margin: 0;
+  color: var(--color-texto-secundario, #66716f);
+  font-size: 13px;
+}
+
+/* =========================================
    LISTADO DE DIPLOMADOS
    ========================================= */
 
@@ -212,6 +379,8 @@
   color: var(--color-texto);
   font-size: 0.9rem;
 }
+
+/* TARJETA DEL DIPLOMADO */
 
 .az-programa-card {
   overflow: hidden;
@@ -291,7 +460,9 @@
   font-size: 24px;
 }
 
-/* MÓDULOS */
+/* =========================================
+   MÓDULOS
+   ========================================= */
 
 .az-programa-modulos {
   display: grid;
@@ -364,14 +535,17 @@
   white-space: nowrap;
 }
 
-/* SESIONES */
+/* =========================================
+   SESIONES Y SU CUENTA ZOOM
+   ========================================= */
 
 .az-sesiones-lista {
   padding: 0 18px;
 }
 
 .az-sesion-fila {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(150px, 220px) auto;
   align-items: center;
   gap: 13px;
   padding: 14px 0;
@@ -397,7 +571,6 @@
 
 .az-sesion-info {
   display: grid;
-  flex: 1;
   min-width: 0;
   gap: 5px;
 }
@@ -410,7 +583,34 @@
 
 .az-sesion-info span {
   color: var(--color-texto);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+/* CUENTA DE CADA SESIÓN */
+
+.az-sesion-cuenta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #f3f6f3;
+}
+
+.az-sesion-cuenta span {
+  color: #697572;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.az-sesion-cuenta strong {
+  color: var(--color-verde);
+  font-size: 12px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -421,6 +621,7 @@
   background: #f0eee5;
   color: var(--color-verde);
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .az-sin-sesiones {
@@ -431,165 +632,21 @@
 }
 
 /* =========================================
-   CONFLICTOS
-   ========================================= */
-
-.az-panel-conflictos {
-  border-color: #ead7a4;
-}
-
-.az-conflictos-contador {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 8px;
-  color: #805b10;
-  background: #fff1cc;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.az-lista-conflictos {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.az-conflicto {
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid #ead7a4;
-  border-left: 4px solid var(--color-dorado);
-  border-radius: 8px;
-  background: #fffdf7;
-}
-
-.az-conflicto h4 {
-  margin: 0 0 12px;
-  color: var(--color-verde);
-  font-size: 14px;
-}
-
-.az-conflicto-sesion {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 13px;
-  border-radius: 8px;
-  background: #f7f8f6;
-}
-
-.az-conflicto-sesion strong {
-  color: var(--color-verde);
-  font-size: 13px;
-}
-
-.az-conflicto-sesion p {
-  margin: 4px 0 0;
-  color: var(--color-texto);
-  font-size: 13px;
-}
-
-.az-conflicto-sesion > span:last-child {
-  color: #697572;
-  font-size: 12px;
-}
-
-.az-conflicto-etiqueta {
-  color: #805b10;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.az-conflicto-ocupada {
-  background: #fff5f2;
-}
-
-.az-conflicto-ocupada .az-conflicto-etiqueta {
-  color: #a33333;
-}
-
-.az-conflicto-separador {
-  padding: 10px 0;
-  color: #a33333;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* =========================================
-   ALTERNATIVAS ZOOM
-   ========================================= */
-
-.az-panel-alternativas {
-  border-color: #d8e5dc;
-}
-
-.az-lista-alternativas {
-  display: grid;
-  gap: 12px;
-}
-
-.az-alternativa {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid var(--color-borde);
-  border-radius: 9px;
-}
-
-.az-alternativa-libre {
-  background: #f3faf5;
-  border-color: #cce8d4;
-}
-
-.az-alternativa-ocupada {
-  background: #fff9f5;
-  border-color: #ead7c8;
-}
-
-.az-alternativa-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-
-.az-alternativa-info strong {
-  color: var(--color-verde);
-  font-size: 14px;
-}
-
-.az-alternativa-info > span {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-
-.az-alternativa-estado {
-  color: #267247;
-  font-weight: 600;
-}
-
-.az-alternativa-ocupada .az-alternativa-estado {
-  color: #a35b32;
-}
-
-/* =========================================
    RESPONSIVE
    ========================================= */
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .az-resumen {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .az-lista-conflictos {
-    grid-template-columns: 1fr;
+  .az-sesion-fila {
+    grid-template-columns: 34px minmax(0, 1fr) minmax(130px, 190px);
+  }
+
+  .az-sesion-estado {
+    grid-column: 2 / -1;
+    justify-self: start;
   }
 }
 
@@ -617,12 +674,21 @@
   }
 
   .az-sesion-fila {
-    align-items: flex-start;
-    flex-wrap: wrap;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .az-sesion-info {
+    grid-column: 2;
+  }
+
+  .az-sesion-cuenta {
+    grid-column: 2;
   }
 
   .az-sesion-estado {
-    margin-left: 47px;
+    grid-column: 2;
+    margin: 0;
   }
 }
 
@@ -652,5 +718,13 @@
 
   .az-alternativa button {
     width: 100%;
+  }
+
+  .az-no-disponible {
+    text-align: center;
+  }
+
+  .az-conflicto {
+    padding: 12px;
   }
 }

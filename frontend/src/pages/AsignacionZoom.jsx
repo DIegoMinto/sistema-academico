@@ -48,12 +48,14 @@ function obtenerSesiones(modulo) {
 function agruparPorDiplomado(modulos) {
   return Object.values(
     modulos.reduce((grupos, modulo) => {
-      const clave = modulo.id_curso ?? modulo.nombre_curso;
+      const clave = String(
+        modulo.id_curso ?? modulo.nombre_curso ?? 'sin-programa'
+      );
 
       if (!grupos[clave]) {
         grupos[clave] = {
           id: clave,
-          nombre: modulo.nombre_curso,
+          nombre: modulo.nombre_curso || 'Programa sin nombre',
           modulos: []
         };
       }
@@ -62,6 +64,15 @@ function agruparPorDiplomado(modulos) {
 
       return grupos;
     }, {})
+  );
+}
+
+function obtenerCuentaDeSesion(sesion, modulo) {
+  return (
+    sesion.asignacion?.nombre ||
+    sesion.nombre_cuenta_zoom ||
+    modulo.asignacion?.nombre ||
+    'Sin cuenta Zoom asignada'
   );
 }
 
@@ -187,19 +198,31 @@ function AsignacionZoom() {
   }
 
   function alternarDiplomado(id) {
+    const clave = String(id);
+
     setDiplomadosExpandidos(actuales =>
-      actuales.includes(id)
-        ? actuales.filter(item => item !== id)
-        : [...actuales, id]
+      actuales.includes(clave)
+        ? actuales.filter(item => item !== clave)
+        : [...actuales, clave]
     );
   }
 
   function editarModulo(modulo) {
     cambiarModulo(String(modulo.id_modulo));
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+    const idDiplomado = String(
+      modulo.id_curso ?? modulo.nombre_curso ?? 'sin-programa'
+    );
+
+    setDiplomadosExpandidos(actuales =>
+      actuales.includes(idDiplomado)
+        ? actuales
+        : [...actuales, idDiplomado]
+    );
+
+    document.getElementById('az-formulario')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
     });
   }
 
@@ -215,7 +238,7 @@ function AsignacionZoom() {
     setMostrarAlternativas(false);
 
     mostrarMensaje(
-      `Seleccionaste ${cuenta.nombre}. Ya puedes guardar la asignación.`
+      `Seleccionaste ${cuenta.nombre}. Ahora puedes guardar la asignación.`
     );
   }
 
@@ -229,7 +252,7 @@ function AsignacionZoom() {
       setProcesando(true);
       setError('');
       setMensaje('');
-
+      setConflictos([]);
       setAlternativas([]);
       setMostrarAlternativas(false);
 
@@ -244,14 +267,14 @@ function AsignacionZoom() {
 
       if (listaConflictos.length > 0) {
         mostrarMensaje(
-          'Esta cuenta tiene sesiones que se cruzan con las del módulo seleccionado.',
+          'Esta cuenta ya tiene sesiones programadas en ese horario.',
           'advertencia'
         );
 
         await consultarAlternativas();
       } else {
         mostrarMensaje(
-          'No se encontraron cruces de horario para esta cuenta.'
+          'La cuenta está disponible para este módulo.'
         );
       }
     } catch (err) {
@@ -261,7 +284,7 @@ function AsignacionZoom() {
 
       if (listaConflictos.length > 0) {
         mostrarMensaje(
-          'Se encontraron cruces de horario.',
+          'Esta cuenta ya tiene sesiones programadas en ese horario.',
           'advertencia'
         );
 
@@ -435,7 +458,7 @@ function AsignacionZoom() {
       ) : (
         <>
 
-          {/* FORMULARIO DE ASIGNACIÓN */}
+          {/* CONFIGURACIÓN */}
 
           <div className="az-panel" id="az-formulario">
 
@@ -510,7 +533,6 @@ function AsignacionZoom() {
 
             {moduloActual && (
               <div className="az-resumen">
-
                 <div>
                   <span className="az-etiqueta">Diplomado</span>
                   <strong>{moduloActual.nombre_curso}</strong>
@@ -522,17 +544,16 @@ function AsignacionZoom() {
                 </div>
 
                 <div>
-                  <span className="az-etiqueta">Sesiones programadas</span>
+                  <span className="az-etiqueta">Sesiones</span>
                   <strong>{sesiones.length}</strong>
                 </div>
 
                 <div>
-                  <span className="az-etiqueta">Asignación actual</span>
+                  <span className="az-etiqueta">Cuenta actual</span>
                   <strong>
                     {moduloActual.asignacion?.nombre || 'Sin asignar'}
                   </strong>
                 </div>
-
               </div>
             )}
 
@@ -570,7 +591,139 @@ function AsignacionZoom() {
             </div>
           </div>
 
-          {/* LISTADO AGRUPADO POR DIPLOMADO */}
+          {/* CONFLICTOS: JUSTO DEBAJO DE LA CONFIGURACIÓN */}
+
+          {conflictos.length > 0 && (
+            <div className="az-panel az-panel-conflictos">
+
+              <div className="az-panel-titulo">
+                <div>
+                  <h3>La cuenta está ocupada</h3>
+                  <p>
+                    Estas sesiones coinciden en horario. Elige otra cuenta
+                    para continuar.
+                  </p>
+                </div>
+
+                <span className="az-conflictos-contador">
+                  {conflictos.length}
+                </span>
+              </div>
+
+              <div className="az-lista-conflictos">
+                {conflictos.map((conflicto, index) => (
+                  <article
+                    className="az-conflicto"
+                    key={`${conflicto.id_modulo || index}-${index}`}
+                  >
+                    <div className="az-conflicto-resumen">
+                      <span className="az-conflicto-numero">
+                        Cruce {index + 1}
+                      </span>
+
+                      <div className="az-conflicto-fila">
+                        <span>Tu sesión</span>
+                        <strong>
+                          {conflicto.sesion_nueva || 'Sesión sin título'}
+                        </strong>
+                        <small>
+                          {formatearFecha(conflicto.fecha_nueva)}
+                          {' · '}
+                          {formatearHora(conflicto.hora_inicio_nueva)}
+                          {' – '}
+                          {formatearHora(conflicto.hora_fin_nueva)}
+                        </small>
+                      </div>
+
+                      <div className="az-conflicto-fila az-conflicto-fila-ocupada">
+                        <span>Ya está ocupada por</span>
+                        <strong>
+                          {conflicto.curso} — {conflicto.modulo}
+                        </strong>
+                        <small>
+                          {conflicto.sesion || 'Sesión sin título'}
+                          {' · '}
+                          {formatearFecha(conflicto.fecha)}
+                          {' · '}
+                          {formatearHora(conflicto.hora_inicio)}
+                          {' – '}
+                          {formatearHora(conflicto.hora_fin)}
+                        </small>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CUENTAS ALTERNATIVAS: DEBAJO DE LOS CONFLICTOS */}
+
+          {mostrarAlternativas && (
+            <div className="az-panel az-panel-alternativas">
+
+              <div className="az-panel-titulo">
+                <div>
+                  <h3>Elige otra cuenta Zoom</h3>
+                  <p>
+                    Solo puedes seleccionar cuentas que estén libres
+                    en los horarios de este módulo.
+                  </p>
+                </div>
+              </div>
+
+              {cargandoAlternativas ? (
+                <p className="az-alternativas-cargando">
+                  Consultando cuentas disponibles...
+                </p>
+              ) : alternativas.length === 0 ? (
+                <p className="az-alternativas-vacio">
+                  No hay cuentas Zoom activas para consultar.
+                </p>
+              ) : (
+                <div className="az-lista-alternativas">
+                  {alternativas.map(cuenta => (
+                    <article
+                      className={`az-alternativa ${
+                        cuenta.disponible
+                          ? 'az-alternativa-libre'
+                          : 'az-alternativa-ocupada'
+                      }`}
+                      key={cuenta.id}
+                    >
+                      <div className="az-alternativa-info">
+                        <strong>{cuenta.nombre}</strong>
+                        <span>{cuenta.correo}</span>
+
+                        <span className="az-alternativa-estado">
+                          {cuenta.disponible
+                            ? 'Disponible'
+                            : `${cuenta.conflictos?.length || 0} cruce(s)`}
+                        </span>
+                      </div>
+
+                      {cuenta.disponible ? (
+                        <button
+                          type="button"
+                          className="button-primary"
+                          disabled={procesando}
+                          onClick={() => seleccionarAlternativa(cuenta)}
+                        >
+                          Usar esta cuenta
+                        </button>
+                      ) : (
+                        <span className="az-no-disponible">
+                          No disponible
+                        </span>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* LISTADO DE DIPLOMADOS */}
 
           <div className="az-listado-programas">
 
@@ -578,14 +731,13 @@ function AsignacionZoom() {
               <div>
                 <h3>Programas y sesiones</h3>
                 <p>
-                  Pulsa sobre un diplomado para consultar sus módulos
-                  y sesiones.
+                  Abre un diplomado para consultar sus módulos,
+                  sesiones y cuentas Zoom asignadas.
                 </p>
               </div>
             </div>
 
             {diplomadosAgrupados.map(diplomado => {
-
               const totalSesiones = diplomado.modulos.reduce(
                 (total, modulo) =>
                   total + obtenerSesiones(modulo).length,
@@ -593,7 +745,7 @@ function AsignacionZoom() {
               );
 
               const expandido = diplomadosExpandidos.includes(
-                diplomado.id
+                String(diplomado.id)
               );
 
               return (
@@ -601,7 +753,6 @@ function AsignacionZoom() {
                   className="az-programa-card"
                   key={diplomado.id}
                 >
-
                   <button
                     type="button"
                     className="az-programa-header"
@@ -628,9 +779,7 @@ function AsignacionZoom() {
 
                   {expandido && (
                     <div className="az-programa-modulos">
-
                       {diplomado.modulos.map(modulo => {
-
                         const sesionesModulo = obtenerSesiones(modulo);
 
                         return (
@@ -638,9 +787,7 @@ function AsignacionZoom() {
                             className="az-modulo-card"
                             key={modulo.id_modulo}
                           >
-
                             <header className="az-modulo-header">
-
                               <div className="az-modulo-titulo">
                                 <span className="az-modulo-etiqueta">
                                   MÓDULO
@@ -656,7 +803,6 @@ function AsignacionZoom() {
                               </div>
 
                               <div className="az-acciones-tabla">
-
                                 <button
                                   type="button"
                                   className="button-secondary"
@@ -676,12 +822,10 @@ function AsignacionZoom() {
                                     Eliminar
                                   </button>
                                 )}
-
                               </div>
                             </header>
 
                             <div className="az-sesiones-lista">
-
                               {sesionesModulo.length === 0 ? (
                                 <p className="az-sin-sesiones">
                                   Este módulo todavía no tiene sesiones
@@ -693,7 +837,6 @@ function AsignacionZoom() {
                                     className="az-sesion-fila"
                                     key={sesion.id_sesion ?? indice}
                                   >
-
                                     <div className="az-sesion-numero">
                                       {indice + 1}
                                     </div>
@@ -713,193 +856,31 @@ function AsignacionZoom() {
                                       </span>
                                     </div>
 
+                                    <div className="az-sesion-cuenta">
+                                      <span>Cuenta Zoom</span>
+                                      <strong>
+                                        {obtenerCuentaDeSesion(sesion, modulo)}
+                                      </strong>
+                                    </div>
+
                                     <span className="az-sesion-estado">
                                       {sesion.estado || 'Programada'}
                                     </span>
-
                                   </div>
                                 ))
                               )}
-
                             </div>
                           </article>
                         );
                       })}
-
                     </div>
                   )}
-
                 </section>
               );
             })}
-
           </div>
-
-          {/* CONFLICTOS DE HORARIO */}
-
-          {conflictos.length > 0 && (
-            <div className="az-panel az-panel-conflictos">
-
-              <div className="az-panel-titulo">
-                <div>
-                  <h3>Conflictos de horario</h3>
-                  <p>
-                    Se encontraron {conflictos.length} cruce(s).
-                    La asignación no se guardará mientras existan.
-                  </p>
-                </div>
-
-                <span className="az-conflictos-contador">
-                  {conflictos.length}
-                </span>
-              </div>
-
-              <div className="az-lista-conflictos">
-
-                {conflictos.map((conflicto, index) => (
-                  <article
-                    className="az-conflicto"
-                    key={`${index}-${JSON.stringify(conflicto)}`}
-                  >
-
-                    <h4>Conflicto {index + 1}</h4>
-
-                    <div className="az-conflicto-sesion">
-
-                      <span className="az-conflicto-etiqueta">
-                        Módulo que intentas asignar
-                      </span>
-
-                      <strong>{moduloActual?.nombre_curso}</strong>
-                      <strong>{moduloActual?.nombre_modulo}</strong>
-
-                      <p>
-                        {conflicto.sesion_nueva || 'Sesión sin título'}
-                      </p>
-
-                      <span>
-                        {formatearFecha(conflicto.fecha_nueva)}
-                        {' · '}
-                        {formatearHora(conflicto.hora_inicio_nueva)}
-                        {' – '}
-                        {formatearHora(conflicto.hora_fin_nueva)}
-                      </span>
-
-                    </div>
-
-                    <div className="az-conflicto-separador">
-                      Se cruza con
-                    </div>
-
-                    <div className="az-conflicto-sesion az-conflicto-ocupada">
-
-                      <span className="az-conflicto-etiqueta">
-                        Sesión que ya ocupa la cuenta
-                      </span>
-
-                      <strong>{conflicto.curso}</strong>
-                      <strong>{conflicto.modulo}</strong>
-
-                      <p>
-                        {conflicto.sesion || 'Sesión sin título'}
-                      </p>
-
-                      <span>
-                        {formatearFecha(conflicto.fecha)}
-                        {' · '}
-                        {formatearHora(conflicto.hora_inicio)}
-                        {' – '}
-                        {formatearHora(conflicto.hora_fin)}
-                      </span>
-
-                    </div>
-
-                  </article>
-                ))}
-
-              </div>
-            </div>
-          )}
-
-          {/* CUENTAS ZOOM ALTERNATIVAS */}
-
-          {mostrarAlternativas && (
-            <div className="az-panel az-panel-alternativas">
-
-              <div className="az-panel-titulo">
-                <div>
-                  <h3>Otras cuentas Zoom</h3>
-                  <p>
-                    Consulta qué cuentas están disponibles para
-                    programar este módulo.
-                  </p>
-                </div>
-              </div>
-
-              {cargandoAlternativas ? (
-                <p>Consultando disponibilidad de las cuentas...</p>
-              ) : alternativas.length === 0 ? (
-                <p>
-                  No hay cuentas Zoom activas registradas para consultar.
-                </p>
-              ) : (
-                <div className="az-lista-alternativas">
-
-                  {alternativas.map(cuenta => (
-                    <article
-                      className={`az-alternativa ${
-                        cuenta.disponible
-                          ? 'az-alternativa-libre'
-                          : 'az-alternativa-ocupada'
-                      }`}
-                      key={cuenta.id}
-                    >
-
-                      <div className="az-alternativa-info">
-
-                        <strong>{cuenta.nombre}</strong>
-
-                        <span>{cuenta.correo}</span>
-
-                        <span className="az-alternativa-estado">
-                          {cuenta.disponible
-                            ? 'Disponible'
-                            : `${cuenta.conflictos?.length || 0} cruce(s) de horario`}
-                        </span>
-
-                      </div>
-
-                      {cuenta.disponible ? (
-                        <button
-                          type="button"
-                          className="button-primary"
-                          disabled={procesando}
-                          onClick={() => seleccionarAlternativa(cuenta)}
-                        >
-                          Seleccionar
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="button-secondary"
-                          disabled
-                        >
-                          No disponible
-                        </button>
-                      )}
-
-                    </article>
-                  ))}
-
-                </div>
-              )}
-
-            </div>
-          )}
-
         </>
       )}
-
     </section>
   );
 }
