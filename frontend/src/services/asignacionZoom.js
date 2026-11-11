@@ -75,3 +75,16 @@ export async function eliminarAsignacion(idModulo) {
 
   return procesarRespuesta(response);
 }
+
+export async function obtenerAlternativasZoom(idModulo) {
+  const response = await fetch(`${API_URL}/alternativas`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ idModulo })
+  });
+
+  return procesarRespuesta(response);
+}

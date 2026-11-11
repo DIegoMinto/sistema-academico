@@ -116,9 +116,32 @@ const eliminarAsignacion = async (req, res) => {
   }
 };
 
+
+const obtenerAlternativasZoom = async (req, res) => {
+  try {
+    const idModulo = obtenerId(req.body.idModulo);
+
+    if (!idModulo) {
+      return res.status(400).json({
+        message: 'Debes indicar un módulo válido.'
+      });
+    }
+
+    const resultado =
+      await asignacionZoomService.obtenerAlternativasZoom(idModulo);
+
+    return res.json(resultado);
+
+  } catch (error) {
+    manejarError(res, error);
+  }
+};
+
+
 module.exports = {
   obtenerAsignaciones,
   previsualizarAsignacion,
   guardarAsignacion,
-  eliminarAsignacion
+  eliminarAsignacion,
+  obtenerAlternativasZoom
 };

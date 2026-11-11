@@ -248,9 +248,55 @@ const eliminarAsignacion = async (idModulo) => {
   return result.rowCount > 0;
 };
 
+const obtenerAlternativasZoom = async (idModulo) => {
+  // Verificar que el módulo exista.
+  const moduloResult = await mainPool.query(`
+    SELECT id_modulo
+    FROM public.programa_modulos
+    WHERE id_modulo = $1
+  `, [idModulo]);
+
+  if (!moduloResult.rowCount) {
+    const error = new Error('El módulo seleccionado no existe.');
+    error.status = 404;
+    throw error;
+  }
+
+  // Obtener todas las cuentas activas.
+  const cuentasResult = await db.query(`
+    SELECT id, nombre, correo, activa
+    FROM public.cuentas_zoom
+    WHERE activa = TRUE
+    ORDER BY nombre
+  `);
+
+  // Comprobar cada cuenta contra las sesiones del módulo.
+  const alternativas = await Promise.all(
+    cuentasResult.rows.map(async (cuenta) => {
+      const conflictos = await detectarConflictos(
+        idModulo,
+        cuenta.id
+      );
+
+      return {
+        ...cuenta,
+        disponible: conflictos.length === 0,
+        conflictos
+      };
+    })
+  );
+
+  return {
+    alternativas,
+    disponibles: alternativas.filter(c => c.disponible),
+    ocupadas: alternativas.filter(c => !c.disponible)
+  };
+};
+
 module.exports = {
   obtenerAsignaciones,
   previsualizarAsignacion,
   guardarAsignacion,
-  eliminarAsignacion
+  eliminarAsignacion,
+  obtenerAlternativasZoom
 };

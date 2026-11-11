@@ -30,4 +30,10 @@ router.delete(
   controller.eliminarAsignacion
 );
 
+router.post(
+  '/alternativas',
+  requireAuth,
+  controller.obtenerAlternativasZoom
+);
+
 module.exports = router;
